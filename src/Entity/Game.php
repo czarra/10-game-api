@@ -10,9 +10,14 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use App\Validator\AtLeastThreeTasks;
 
 #[ORM\Entity(repositoryClass: GameRepository::class)]
 #[ORM\Table(name: 'games')]
+#[UniqueEntity(fields: ['name'], message: 'This game name is already in use.')]
+#[AtLeastThreeTasks]
 #[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
 class Game
 {
@@ -21,9 +26,11 @@ class Game
     private Uuid $id;
 
     #[ORM\Column(length: 255, unique: true)]
+    #[Assert\NotBlank]
     private string $name;
 
     #[ORM\Column(type: 'text')]
+    #[Assert\NotBlank]
     private string $description;
 
     #[ORM\Column]
@@ -43,7 +50,7 @@ class Game
     /**
      * @var Collection<int, GameTask>
      */
-    #[ORM\OneToMany(mappedBy: 'game', targetEntity: GameTask::class, cascade: ['persist', 'remove'])]
+    #[ORM\OneToMany(mappedBy: 'game', targetEntity: GameTask::class, cascade: ['persist', 'remove'], orphanRemoval: true)]
     #[ORM\OrderBy(['sequenceOrder' => 'ASC'])]
     private Collection $gameTasks;
 

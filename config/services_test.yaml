@@ -1,0 +1,4 @@
+services:
+    # make all services public in the test environment
+    _defaults:
+        public: true

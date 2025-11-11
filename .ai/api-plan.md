@@ -222,7 +222,7 @@
 
 ### Admin Endpoints (Require ADMIN role)
 
-#### GET /api/admin/games
+#### GET /admin/games
 - **Description**: Get all games (including unavailable) for admin
 - **Headers**: Authorization: Bearer {token}
 - **Query Parameters**:
@@ -231,7 +231,7 @@
     - `available` (boolean filter)
 - **Response**: Similar to games list but with admin fields
 
-#### POST /api/admin/games
+#### POST /admin/games
 - **Description**: Create a new game
 - **Headers**: Authorization: Bearer {token}
 - **Request Body**:
@@ -251,18 +251,18 @@
 }
 ```
 
-#### PUT /api/admin/games/{id}
+#### PUT /admin/games/{id}
 - **Description**: Update a game
 - **Headers**: Authorization: Bearer {token}
 - **Request Body**: Partial game data
 - **Response**: 200 with updated game
 
-#### DELETE /api/admin/games/{id}
+#### DELETE /admin/games/{id}
 - **Description**: Soft delete a game
 - **Headers**: Authorization: Bearer {token}
 - **Response**: 204 No Content
 
-#### POST /api/admin/games/{gameId}/tasks
+#### POST /admin/games/{gameId}/tasks
 - **Description**: Add task to game
 - **Headers**: Authorization: Bearer {token}
 - **Request Body**:
@@ -277,12 +277,12 @@
 ```
 - **Response**: 201 with game task details
 
-#### DELETE /api/admin/games/{gameId}/tasks/{gameTaskId}
+#### DELETE /admin/games/{gameId}/tasks/{gameTaskId}
 - **Description**: Remove task from game (soft delete)
 - **Headers**: Authorization: Bearer {token}
 - **Response**: 204 No Content
 
-#### GET /api/admin/stats/completions
+#### GET /admin/stats/completions
 - **Description**: Get game completion statistics
 - **Headers**: Authorization: Bearer {token}
 - **Query Parameters**:

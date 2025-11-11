@@ -22,3 +22,24 @@ services:
 
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones
+
+    admin.task:
+        class: App\Admin\TaskAdmin
+        arguments: [~, App\Entity\Task, ~]
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Game Management", label: "Tasks", model_class: App\Entity\Task }
+
+    admin.gametask:
+        class: App\Admin\GameTaskAdmin
+        arguments: [~, App\Entity\GameTask, ~]
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Game Management", label: "Game Tasks", model_class: App\Entity\GameTask }
+
+    admin.game:
+        class: App\Admin\GameAdmin
+        arguments: [~, App\Entity\Game, ~]
+        tags:
+            - { name: sonata.admin, manager_type: orm, group: "Game Management", label: "Games", model_class: App\Entity\Game }
+
+
+

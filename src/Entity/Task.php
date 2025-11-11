@@ -8,6 +8,7 @@ use App\Repository\TaskRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Gedmo\Mapping\Annotation as Gedmo;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: TaskRepository::class)]
 #[ORM\Table(name: 'tasks')]
@@ -19,18 +20,29 @@ class Task
     private Uuid $id;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
     private string $name;
 
     #[ORM\Column(type: 'text')]
+    #[Assert\NotBlank]
     private string $description;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 7)]
+    #[Assert\NotBlank]
+    #[Assert\Type('numeric')]
+    #[Assert\Range(min: -90, max: 90)]
     private string $latitude;
 
     #[ORM\Column(type: 'decimal', precision: 10, scale: 7)]
+    #[Assert\NotBlank]
+    #[Assert\Type('numeric')]
+    #[Assert\Range(min: -180, max: 180)]
     private string $longitude;
 
     #[ORM\Column(type: 'integer')]
+    #[Assert\NotBlank]
+    #[Assert\Type('integer')]
+    #[Assert\GreaterThan(0)]
     private int $allowedDistance;
 
     #[Gedmo\Timestampable(on: 'create')]
