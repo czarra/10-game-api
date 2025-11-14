@@ -61,6 +61,11 @@ class Task
         $this->id = Uuid::v4();
     }
 
+    public function __toString(): string
+    {
+        return $this->name ?? 'Nowe zadanie';
+    }
+
     public function getId(): Uuid
     {
         return $this->id;

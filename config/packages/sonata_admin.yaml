@@ -7,6 +7,10 @@ sonata_admin:
                 items:
                     - admin.game
                     - admin.task
+            game_statistics:
+                label: "Statistics"
+                items:
+                    - admin.user_game_stats
         blocks:
             - { type: sonata.admin.block.admin_list, position: left }
 

@@ -44,7 +44,6 @@ Kryteria akceptacji:
 - Po poprawnym zalogowaniu następuje przekierowanie do pulpitu głównego panelu
 - Po niepoprawnym logowaniu wyświetlany jest komunikat błędu
 - Sesja administratora wygasa po okresie nieaktywności
-- Wymagane silne hasło (min. 8 znaków, 1 cyfra, 1 znak specjalny)
 
 ### US-002
 Tytuł: Tworzenie nowej gry

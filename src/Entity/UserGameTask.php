@@ -11,6 +11,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: UserGameTaskRepository::class)]
 #[ORM\Table(name: 'user_game_tasks')]
+#[ORM\UniqueConstraint(name: 'user_game_tasks_user_game_id_game_task_id_unique', columns: ['user_game_id', 'game_task_id'])]
 class UserGameTask
 {
     #[ORM\Id]

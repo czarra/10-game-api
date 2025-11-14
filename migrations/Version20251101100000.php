@@ -39,57 +39,74 @@ final class Version20251101100000 extends AbstractMigration
         // =================================================================
         $this->addSql('
             create table users (
-                id uuid primary key default gen_random_uuid(),
-                email varchar(255) not null unique,
+                id uuid primary key,
+                email varchar(255) not null,
                 password varchar(255) not null,
                 roles json not null,
-                created_at timestamptz not null default current_timestamp,
-                updated_at timestamptz not null default current_timestamp
+                created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL,
+                updated_at TIMESTAMP(0) WITH TIME ZONE NOT NULL
             );
         ');
+
+        $this->addSql('CREATE UNIQUE INDEX UNIQ_1483A5E9E7927C74 ON users (email);
+        ');
+        $this->addSql('COMMENT ON COLUMN users.id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN users.created_at IS \'(DC2Type:datetimetz_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN users.updated_at IS \'(DC2Type:datetimetz_immutable)\'');
 
         // =================================================================
         // Create games table
         // =================================================================
         $this->addSql('
             create table games (
-                id uuid primary key default gen_random_uuid(),
-                name varchar(255) not null unique,
+                id uuid primary key,
+                name varchar(255) not null,
                 description text not null,
-                is_available boolean not null default false,
-                created_at timestamptz not null default current_timestamp,
-                updated_at timestamptz not null default current_timestamp,
-                deleted_at timestamptz null
+                is_available boolean not null,
+                created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL,
+                updated_at TIMESTAMP(0) WITH TIME ZONE NOT NULL,
+                deleted_at TIMESTAMP(0) WITH TIME ZONE DEFAULT NULL
             );
         ');
+
+        $this->addSql('CREATE UNIQUE INDEX UNIQ_FF232B315E237E06 ON games (name);
+        ');
+        $this->addSql('COMMENT ON COLUMN games.id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN games.created_at IS \'(DC2Type:datetimetz_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN games.updated_at IS \'(DC2Type:datetimetz_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN games.deleted_at IS \'(DC2Type:datetimetz_immutable)\'');
 
         // =================================================================
         // Create tasks table
         // =================================================================
         $this->addSql('
             create table tasks (
-                id uuid primary key default gen_random_uuid(),
+                id uuid primary key,
                 name varchar(255) not null,
                 description text not null,
                 latitude decimal(10, 7) not null,
                 longitude decimal(10, 7) not null,
                 allowed_distance integer not null,
-                created_at timestamptz not null default current_timestamp,
-                updated_at timestamptz not null default current_timestamp,
-                deleted_at timestamptz null
+                created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL,
+                updated_at TIMESTAMP(0) WITH TIME ZONE NOT NULL,
+                deleted_at TIMESTAMP(0) WITH TIME ZONE DEFAULT NULL
             );
         ');
+        $this->addSql('COMMENT ON COLUMN tasks.id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN tasks.created_at IS \'(DC2Type:datetimetz_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN tasks.updated_at IS \'(DC2Type:datetimetz_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN tasks.deleted_at IS \'(DC2Type:datetimetz_immutable)\'');
 
         // =================================================================
         // Create game_tasks table
         // =================================================================
         $this->addSql('
             create table game_tasks (
-                id uuid primary key default gen_random_uuid(),
+                id uuid primary key,
                 game_id uuid not null references games(id) on delete cascade,
                 task_id uuid not null references tasks(id) on delete cascade,
                 sequence_order integer not null,
-                deleted_at timestamptz null
+                deleted_at TIMESTAMP(0) WITH TIME ZONE DEFAULT NULL
             );
         ');
         $this->addSql('
@@ -97,17 +114,21 @@ final class Version20251101100000 extends AbstractMigration
             on game_tasks (game_id, sequence_order)
             where deleted_at is null;
         ');
+        $this->addSql('COMMENT ON COLUMN game_tasks.id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN game_tasks.game_id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN game_tasks.task_id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN game_tasks.deleted_at IS \'(DC2Type:datetimetz_immutable)\'');
 
         // =================================================================
         // Create user_games table
         // =================================================================
         $this->addSql('
             create table user_games (
-                id uuid primary key default gen_random_uuid(),
+                id uuid primary key,
                 user_id uuid not null references users(id) on delete cascade,
                 game_id uuid not null references games(id) on delete cascade,
-                started_at timestamptz not null default current_timestamp,
-                completed_at timestamptz null
+                started_at TIMESTAMP(0) WITH TIME ZONE NOT NULL,
+                completed_at TIMESTAMP(0) WITH TIME ZONE DEFAULT NULL
             );
         ');
         $this->addSql('
@@ -115,35 +136,38 @@ final class Version20251101100000 extends AbstractMigration
             on user_games (user_id, game_id)
             where completed_at is null;
         ');
+        $this->addSql('COMMENT ON COLUMN user_games.id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN user_games.user_id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN user_games.game_id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN user_games.started_at IS \'(DC2Type:datetimetz_immutable)\'');
+        $this->addSql('COMMENT ON COLUMN user_games.completed_at IS \'(DC2Type:datetimetz_immutable)\'');
 
         // =================================================================
         // Create user_game_tasks table
         // =================================================================
         $this->addSql('
             create table user_game_tasks (
-                id uuid primary key default gen_random_uuid(),
+                id uuid primary key,
                 user_game_id uuid not null references user_games(id) on delete cascade,
                 game_task_id uuid not null references game_tasks(id) on delete cascade,
-                completed_at timestamptz not null default current_timestamp
+                completed_at TIMESTAMP(0) WITH TIME ZONE NOT NULL
             );
         ');
         $this->addSql('
             create unique index user_game_tasks_user_game_id_game_task_id_unique
             on user_game_tasks (user_game_id, game_task_id);
         ');
+        $this->addSql('COMMENT ON COLUMN user_game_tasks.id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN user_game_tasks.user_game_id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN user_game_tasks.game_task_id IS \'(DC2Type:uuid)\'');
+        $this->addSql('COMMENT ON COLUMN user_game_tasks.completed_at IS \'(DC2Type:datetimetz_immutable)\'');
 
         // =================================================================
         // Create user_tokens table
         // =================================================================
-        $this->addSql('
-            create table user_tokens (
-                id uuid primary key default gen_random_uuid(),
-                user_id uuid not null references users(id) on delete cascade,
-                token varchar(255) not null unique,
-                expires_at timestamptz not null,
-                created_at timestamptz not null default current_timestamp
-            );
-        ');
+        $this->addSql('CREATE SEQUENCE user_tokens_id_seq INCREMENT BY 1 MINVALUE 1 START 1');
+        $this->addSql('CREATE TABLE user_tokens (id INT NOT NULL, refresh_token VARCHAR(128) NOT NULL, username VARCHAR(255) NOT NULL, valid TIMESTAMP(0) WITHOUT TIME ZONE NOT NULL, PRIMARY KEY(id))');
+        $this->addSql('CREATE UNIQUE INDEX UNIQ_CF080AB3C74F2195 ON user_tokens (refresh_token)');
 
         // =================================================================
         // Apply Row-Level Security (RLS)
@@ -189,10 +213,6 @@ final class Version20251101100000 extends AbstractMigration
                     where ug.id = user_game_id and ug.user_id = current_setting(\'app.current_user_id\', true)::uuid
                 )
             );');
-
-        // --- RLS for user_tokens table ---
-        $this->addSql('alter table user_tokens enable row level security;');
-        $this->addSql('create policy user_self_access on user_tokens for all using (user_id = current_setting(\'app.current_user_id\', true)::uuid);');
     }
 
     public function down(Schema $schema): void

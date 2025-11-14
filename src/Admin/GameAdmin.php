@@ -4,36 +4,37 @@ declare(strict_types=1);
 
 namespace App\Admin;
 
-use App\Entity\Game;
-use App\Entity\GameTask;
+use App\Form\GameTaskType;
 use Sonata\AdminBundle\Admin\AbstractAdmin;
 use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Form\Type\CollectionType;
 use Sonata\AdminBundle\Show\ShowMapper;
-use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
-use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 final class GameAdmin extends AbstractAdmin
 {
     protected function configureFormFields(FormMapper $form): void
     {
         $form
-            ->add('name', TextType::class)
-            ->add('description', TextareaType::class)
-            ->add('isAvailable', CheckboxType::class, [
-                'required' => false,
-            ])
-            ->add('gameTasks', CollectionType::class, [
-                'by_reference' => false,
-            ], [
-                'edit' => 'inline',
-                'inline' => 'table',
-                'sortable' => 'sequenceOrder',
-                'admin_code' => 'admin.gametask',
-            ]);
+            ->with('Informacje o Grze', ['class' => 'col-md-6'])
+                ->add('name')
+                ->add('description')
+                ->add('isAvailable')
+            ->end()
+            ->with('Zadania w Grze', ['class' => 'col-md-12'])
+                ->add('gameTasks', CollectionType::class, [
+                    'label' => 'Zadania',
+                    'entry_type' => GameTaskType::class,
+                    'allow_add' => true,
+                    'allow_delete' => true,
+                    'by_reference' => false,
+                    'prototype' => true,
+                    'attr' => [
+                        'class' => 'sonata-collection-container',
+                    ],
+                ])
+            ->end();
     }
 
     protected function configureDatagridFilters(DatagridMapper $datagrid): void

@@ -72,6 +72,11 @@ To set up and run the project on your local machine, follow these steps.
     ```bash
     docker-compose exec php bin/console doctrine:migrations:migrate
     ```
+5.  **Fixtures load:**
+    Create an initial admin and user.
+    ```bash
+    docker-compose exec php bin/console doctrine:fixtures:load --no-interaction 
+    ```
 
 The application should now be running. You can access it at `http://localhost:8282`.
 

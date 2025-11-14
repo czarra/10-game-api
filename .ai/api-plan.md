@@ -18,17 +18,15 @@
 - **Request Body**:
 ```json
 {
-  "email": "user@example.com",
+  "username": "user@example.com",
   "password": "Password123!"
 }
 ```
 - **Response** (201):
 ```json
 {
-  "id": "uuid",
-  "email": "user@example.com",
-  "roles": ["ROLE_USER"],
-  "createdAt": "2024-01-01T00:00:00Z"
+  "token": "jwt_access_token",
+  "refresh_token": "refresh_token"
 }
 ```
 - **Error Responses**: 400 (validation), 409 (email exists)
@@ -38,7 +36,7 @@
 - **Request Body**:
 ```json
 {
-  "email": "user@example.com",
+  "username": "user@example.com",
   "password": "Password123!"
 }
 ```
@@ -47,12 +45,7 @@
 {
   "token": "jwt_access_token",
   "refresh_token": "refresh_token",
-  "expires_in": 3600,
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "roles": ["ROLE_USER"]
-  }
+  "expires_in": 3600
 }
 ```
 - **Error Responses**: 401 (invalid credentials)

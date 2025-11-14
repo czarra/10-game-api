@@ -11,7 +11,7 @@ use Symfony\Component\Uid\Uuid;
 
 #[ORM\Entity(repositoryClass: UserGameRepository::class)]
 #[ORM\Table(name: 'user_games')]
-#[ORM\UniqueConstraint(name: 'user_games_user_id_game_id_unique_active', columns: ['user_id', 'game_id'])]
+#[ORM\UniqueConstraint(name: 'user_games_user_id_game_id_unique_active', columns: ['user_id', 'game_id'], options: ['where' => 'completed_at IS NULL'])]
 class UserGame
 {
     #[ORM\Id]

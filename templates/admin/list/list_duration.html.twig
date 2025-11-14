@@ -1,0 +1,10 @@
+{# templates/admin/list/list_duration.html.twig #}
+{% extends '@SonataAdmin/CRUD/base_list_field.html.twig' %}
+
+{% block field_value %}
+    {% if object.completedAt and object.startedAt %}
+        {{ object.completedAt.diff(object.startedAt).format('%H:%I:%S') }}
+    {% else %}
+        N/A
+    {% endif %}
+{% endblock %}

@@ -30,19 +30,30 @@ security:
                 target: admin_login
             lazy: true
             entry_point: App\Security\AdminLoginAuthenticator
-        main:
-            lazy: true
-            provider: app_user_provider
-            # This firewall handles the API and other parts of the site.
-            # It's configured to use the same user provider.
-            # Further configuration for JWT would be needed here for the API.
+        login:
+            pattern:  ^/api/auth/login
+            stateless: true
+            json_login:
+                check_path: /api/auth/login
+                success_handler: lexik_jwt_authentication.handler.authentication_success
+                failure_handler: lexik_jwt_authentication.handler.authentication_failure
+        api_refresh:
+            pattern: ^/api/auth/refresh
+            stateless: true
+            refresh_jwt: ~
+        api:
+            pattern:   ^/api
+            stateless: true
+            jwt: ~
 
     access_control:
         - { path: ^/admin/login$, roles: PUBLIC_ACCESS }
         - { path: ^/admin/logout$, roles: PUBLIC_ACCESS }
         - { path: ^/admin/, roles: [ROLE_ADMIN, ROLE_SONATA_ADMIN] }
-        - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/refresh, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/login, roles: PUBLIC_ACCESS }
+        - { path: ^/api/auth/register, roles: PUBLIC_ACCESS }
+        - { path: ^/api,       roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:

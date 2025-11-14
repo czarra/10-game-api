@@ -13,12 +13,14 @@ use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use App\Validator\AtLeastThreeTasks;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ORM\Entity(repositoryClass: GameRepository::class)]
 #[ORM\Table(name: 'games')]
 #[UniqueEntity(fields: ['name'], message: 'This game name is already in use.')]
 #[AtLeastThreeTasks]
 #[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
+#[Assert\Callback('validateTaskSequence')]
 class Game
 {
     #[ORM\Id]
@@ -147,5 +149,41 @@ class Game
         }
 
         return $this;
+    }
+
+    public function validateTaskSequence(ExecutionContextInterface $context): void
+    {
+        $sequences = [];
+        $taskIds = [];
+
+        foreach ($this->getGameTasks() as $gameTask) {
+            // Validate unique sequence order
+            $sequenceOrder = $gameTask->getSequenceOrder();
+            if (in_array($sequenceOrder, $sequences, true)) {
+                $context->buildViolation('Kolejność zadań musi być unikalna. Wartość "{{ value }}" jest zduplikowana.')
+                    ->atPath('gameTasks')
+                    ->setParameter('{{ value }}', (string) $sequenceOrder)
+                    ->addViolation();
+            }
+            $sequences[] = $sequenceOrder;
+
+            // Validate unique task assignment
+            $task = $gameTask->getTask();
+            if ($task) {
+                $taskId = $task->getId()->__toString();
+                if (in_array($taskId, $taskIds, true)) {
+                    $context->buildViolation('Zadanie "{{ taskName }}" zostało już przypisane do tej gry.')
+                        ->atPath('gameTasks')
+                        ->setParameter('{{ taskName }}', $task->getName())
+                        ->addViolation();
+                }
+                $taskIds[] = $taskId;
+            }
+        }
+    }
+
+    public function __toString(): string
+    {
+        return $this->name ?? 'Nowa Gra';
     }
 }

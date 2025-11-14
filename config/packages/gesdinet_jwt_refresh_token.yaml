@@ -1,0 +1,9 @@
+gesdinet_jwt_refresh_token:
+    refresh_token_class: App\Entity\UserToken
+    ttl: 2592000
+    user_identity_field: email
+    user_provider: app_user_provider
+    single_use: true
+    token_parameter_name: refresh_token
+    cookie:
+        enabled: false

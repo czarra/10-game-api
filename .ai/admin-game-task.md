@@ -89,11 +89,3 @@ Formularze będą renderowane na podstawie konfiguracji w klasach Admin i będą
 
 7.  **Konfiguracja dashboardu:**
     - W `config/packages/sonata_admin.yaml`, w sekcji `sonata_admin.dashboard.groups`, dodaj grupy i elementy dla `GameAdmin` i `TaskAdmin`, aby pojawiły się w menu panelu.
-
-8.  **Testowanie:**
-    - Napisz testy funkcjonalne (używając `Symfony\Bundle\FrameworkBundle\Test\WebTestCase`), które:
-        - Sprawdzą, czy niezalogowany użytkownik jest przekierowywany na stronę logowania przy próbie dostępu do `/admin/dashboard`.
-        - Sprawdzą, czy zalogowany administrator może uzyskać dostęp do listy gier i zadań.
-        - Przetestują proces tworzenia nowej gry i zadania.
-        - Zweryfikują, że walidator "co najmniej 3 zadania" działa poprawnie i blokuje aktywację gry.
-        - Sprawdzą poprawność działania usuwania (soft delete).

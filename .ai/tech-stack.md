@@ -1,5 +1,5 @@
 Backend:
-- PHP 8
+- PHP 8.3
 - PostgreSQL -baza danych
 - Symfony 6.4
 - doctrine
