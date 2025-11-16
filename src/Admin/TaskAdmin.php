@@ -8,6 +8,7 @@ use Sonata\AdminBundle\Admin\AbstractAdmin;
 use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Form\FormMapper;
+use Sonata\AdminBundle\Show\ShowMapper;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
 use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\Extension\Core\Type\TextType;
@@ -35,5 +36,15 @@ final class TaskAdmin extends AbstractAdmin
             ->addIdentifier('id')
             ->add('name')
             ->add('description');
+    }
+
+    protected function configureShowFields(ShowMapper $show): void
+    {
+        $show
+            ->add('id')
+            ->add('name')
+            ->add('description')
+            ->add('latitude')
+            ->add('longitude');
     }
 }

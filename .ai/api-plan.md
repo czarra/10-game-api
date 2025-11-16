@@ -116,7 +116,7 @@
 
 ### User Games Endpoints
 
-#### POST /api/user/games/{gameId}/start
+#### POST /api/games/{gameId}/start
 - **Description**: Start a game for the current user
 - **Headers**: Authorization: Bearer {token}
 - **Response** (201):
@@ -135,7 +135,7 @@
 ```
 - **Error Responses**: 404 (game not found), 409 (already active), 400 (game unavailable)
 
-#### POST /api/user/games/{userGameId}/tasks/{taskId}/complete
+#### POST /api/games/{userGameId}/tasks/{taskId}/complete
 - **Description**: Complete a task in user's active game
 - **Headers**: Authorization: Bearer {token}
 - **Request Body**:
@@ -160,7 +160,7 @@
 ```
 - **Error Responses**: 400 (wrong location), 409 (wrong task sequence), 404 (not found)
 
-#### GET /api/user/games/active
+#### GET /api/games/active
 - **Description**: Get user's active games
 - **Headers**: Authorization: Bearer {token}
 - **Response** (200):
@@ -184,7 +184,7 @@
 }
 ```
 
-#### GET /api/user/games/completed
+#### GET /api/games/completed
 - **Description**: Get user's completed games with pagination
 - **Headers**: Authorization: Bearer {token}
 - **Query Parameters**:

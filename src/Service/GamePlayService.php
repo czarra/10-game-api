@@ -13,9 +13,13 @@ use App\Repository\GameRepository;
 use App\Repository\GameTaskRepository;
 use App\Repository\UserGameRepository;
 use App\Repository\UserGameTaskRepository;
+use App\Service\Exception\GameAlreadyStartedException;
+use App\Service\Exception\GameHasNoTasksException;
+use App\Service\Exception\GameUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Symfony\Component\Security\Core\User\UserInterface;
 
 class GamePlayService
 {
@@ -29,31 +33,19 @@ class GamePlayService
     ) {
     }
 
-    /**
-     * Starts a new game for the given user.
-     *
-     * @param User $user The user starting the game.
-     * @param string $gameId The ID of the game to start.
-     * @return UserGame The newly started UserGame entity.
-     * @throws NotFoundHttpException If the game is not found.
-     * @throws BadRequestHttpException If the game is not available or already started by the user.
-     */
-    public function startGame(User $user, string $gameId): UserGame
+    public function startGameForUser(Game $game, User $user): UserGame
     {
-        $game = $this->gameRepository->find($gameId);
-
-        if (!$game) {
-            throw new NotFoundHttpException('Game not found.');
-        }
-
         if (!$game->isAvailable()) {
-            throw new BadRequestHttpException('Game is not available.');
+
+            throw new GameUnavailableException();
         }
 
-        // Check if the user already has an active session for this game
-        $existingUserGame = $this->userGameRepository->findOneBy(['user' => $user, 'game' => $game, 'completedAt' => null]);
-        if ($existingUserGame) {
-            throw new BadRequestHttpException('You have an active session for this game already.');
+        if (!$this->gameTaskRepository->findFirstTaskForGame($game)) {
+            throw new GameHasNoTasksException();
+        }
+
+        if ($this->userGameRepository->findActiveGameForUser($user, $game)) {
+            throw new GameAlreadyStartedException();
         }
 
         $userGame = new UserGame();

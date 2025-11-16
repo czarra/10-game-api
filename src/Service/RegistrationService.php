@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Dto\RegistrationRequestDto;
 use App\Entity\User;
 use App\Repository\UserRepository;
+use App\Service\Exception\EmailAlreadyExistsException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 

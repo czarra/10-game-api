@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Game;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -16,6 +17,23 @@ final class GameRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Game::class);
+    }
+
+    public function createAvailableGamesPaginator(int $offset, int $limit): Paginator
+    {
+        $query = $this->createQueryBuilder('g')
+            ->select('g, COUNT(gt.id) as tasksCount')
+            ->leftJoin('g.gameTasks', 'gt')
+            ->where('g.isAvailable = true')
+            ->andWhere('g.deletedAt IS NULL')
+            ->andWhere('gt.deletedAt IS NULL')
+            ->groupBy('g.id')
+            ->orderBy('g.createdAt', 'DESC')
+            ->setFirstResult($offset)
+            ->setMaxResults($limit)
+            ->getQuery();
+
+        return new Paginator($query);
     }
 
     public function findAvailableGame(string $id): ?Game

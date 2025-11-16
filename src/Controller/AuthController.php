@@ -7,7 +7,7 @@ namespace App\Controller;
 use App\Dto\RegistrationRequestDto;
 use App\Entity\User;
 use App\Repository\UserTokenRepository;
-use App\Service\EmailAlreadyExistsException;
+use App\Service\Exception\EmailAlreadyExistsException;
 use App\Service\RegistrationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;

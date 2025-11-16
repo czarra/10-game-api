@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Service;
+namespace App\Service\Exception;
 
 final class EmailAlreadyExistsException extends \DomainException
 {
