@@ -24,10 +24,6 @@ services:
         bind:
             $tokenTTL: '%lexik_jwt_authentication.token_ttl%'
 
-    App\EventSubscriber\RefreshTokenSubscriber:
-        bind:
-            $tokenTTL: '%lexik_jwt_authentication.token_ttl%'
-
     admin.task:
         class: App\Admin\TaskAdmin
         arguments: [~, App\Entity\Task, ~]

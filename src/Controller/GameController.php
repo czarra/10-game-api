@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use App\Dto\ActiveGameListItemDto;
 use App\Dto\CurrentTaskDto;
+use App\Dto\GameDetailsDto;
 use App\Dto\StartGameResponseDto;
 use App\Entity\Game;
 use App\Entity\User;
@@ -13,6 +13,7 @@ use App\Repository\GameTaskRepository;
 use App\Service\GamePlayService;
 use App\Service\GameQueryService;
 use App\Validator\UuidValidator;
+use Nelmio\ApiDocBundle\Attribute\Model;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -20,9 +21,11 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use OpenApi\Attributes as OA; // Importuj alias dla atrybutów
 use Webmozart\Assert\Assert;
 
 #[Route('/api/games')]
+#[OA\Tag(name: 'Games')] // Grupuje endpointy w UI
 final class GameController extends AbstractController
 {
     public function __construct(
@@ -66,6 +69,23 @@ final class GameController extends AbstractController
     }
 
     #[Route('/{id}', name: 'api_game_details_get', methods: ['GET'])]
+    #[OA\Response(
+        response: 200,
+        description: 'Szczegółowe informacje o grze',
+        content: new OA\JsonContent(
+            ref: new Model(type: GameDetailsDto::class)
+        )
+    )]
+    #[OA\Response(
+        response: 404,
+        description: 'Gra o podanym ID nie została znaleziona'
+    )]
+    #[OA\Parameter(
+        name: 'id',
+        in: 'path',
+        description: 'UUID gry',
+        schema: new OA\Schema(type: 'string')
+    )]
     public function getGameDetails(
         string $id,
         UuidValidator $uuidValidator

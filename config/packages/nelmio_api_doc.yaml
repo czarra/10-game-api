@@ -1,0 +1,17 @@
+nelmio_api_doc:
+    documentation:
+        info:
+            title: 'Moje API'
+            description: 'Interaktywna dokumentacja dla mojego projektu.'
+            version: '1.0.0'
+        components:
+            securitySchemes:
+                Bearer:
+                    type: http
+                    scheme: bearer
+                    bearerFormat: JWT
+        security:
+            - Bearer: []
+    areas:
+        path_patterns:
+            - ^/api(?!/doc$) # Dokumentuj wszystko pod /api, z wyjątkiem samej dokumentacji
