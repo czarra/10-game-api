@@ -19,7 +19,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
 #[ORM\Table(name: 'games')]
 #[UniqueEntity(fields: ['name'], message: 'This game name is already in use.')]
 #[AtLeastThreeTasks]
-#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false)]
 #[Assert\Callback('validateTaskSequence')]
 class Game
 {
@@ -126,7 +126,9 @@ class Game
      */
     public function getGameTasks(): Collection
     {
-        return $this->gameTasks;
+        return $this->gameTasks->filter(function(GameTask $gameTask) {
+            return null === $gameTask->getDeletedAt();
+        });
     }
 
     public function addGameTask(GameTask $gameTask): self

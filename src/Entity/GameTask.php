@@ -12,7 +12,7 @@ use Symfony\Component\Uid\Uuid;
 #[ORM\Entity(repositoryClass: GameTaskRepository::class)]
 #[ORM\Table(name: 'game_tasks')]
 #[ORM\UniqueConstraint(name: 'game_tasks_game_id_sequence_order_unique', columns: ['game_id', 'sequence_order'], options: ['where' => 'deleted_at IS NULL'])]
-#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false, hardDelete: true)]
+#[Gedmo\SoftDeleteable(fieldName: 'deletedAt', timeAware: false)]
 class GameTask
 {
     #[ORM\Id]
@@ -31,7 +31,7 @@ class GameTask
     private int $sequenceOrder;
 
     #[ORM\Column(name: 'deleted_at', type: 'datetimetz_immutable', nullable: true)]
-    private ?\DateTimeImmutable $deletedAt;
+    private ?\DateTimeImmutable $deletedAt = null;
 
     public function __construct()
     {

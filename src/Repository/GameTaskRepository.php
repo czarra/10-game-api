@@ -34,4 +34,17 @@ class GameTaskRepository extends ServiceEntityRepository
             ->getQuery()
             ->getOneOrNullResult();
     }
+
+    public function findNextTaskInSequence(Game $game, int $currentSequence): ?GameTask
+    {
+        return $this->createQueryBuilder('gt')
+            ->andWhere('gt.game = :game')
+            ->andWhere('gt.sequenceOrder > :currentSequence')
+            ->setParameter('game', $game)
+            ->setParameter('currentSequence', $currentSequence)
+            ->orderBy('gt.sequenceOrder', 'ASC')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
 }

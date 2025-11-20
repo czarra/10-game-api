@@ -7,6 +7,7 @@ namespace App\Admin;
 use Sonata\AdminBundle\Admin\AbstractAdmin;
 use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
+use Sonata\AdminBundle\Datagrid\ProxyQueryInterface;
 use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Show\ShowMapper;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
@@ -45,6 +46,16 @@ final class TaskAdmin extends AbstractAdmin
             ->add('name')
             ->add('description')
             ->add('latitude')
-            ->add('longitude');
+            ->add('longitude')
+            ->add('allowed_distance');
+    }
+
+    protected function configureQuery(ProxyQueryInterface $query): ProxyQueryInterface
+    {
+        $queryBuilder = $query->getQueryBuilder();
+        $rootAlias = current($queryBuilder->getRootAliases());
+        $queryBuilder->andWhere(sprintf('%s.deletedAt IS NULL', $rootAlias));
+
+        return $query;
     }
 }

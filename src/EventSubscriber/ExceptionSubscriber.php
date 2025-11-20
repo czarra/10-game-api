@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace App\EventSubscriber;
 
+use App\Exception\InvalidTaskSequenceException;
+use App\Exception\TaskAlreadyCompletedException;
+use App\Exception\WrongLocationException;
 use App\Service\Exception\GameAlreadyStartedException;
 use App\Service\Exception\GameHasNoTasksException;
 use App\Service\Exception\GameUnavailableException;
@@ -35,7 +38,10 @@ final class ExceptionSubscriber implements EventSubscriberInterface
         $response = match (true) {
             $exception instanceof GameUnavailableException => new JsonResponse(['error' => $exception->getMessage()], 400),
             $exception instanceof GameHasNoTasksException => new JsonResponse(['error' => $exception->getMessage()], 400),
-            $exception instanceof GameAlreadyStartedException => new JsonResponse(['error' => $exception->getMessage()], 409),
+            $exception instanceof GameAlreadyStartedException,
+            $exception instanceof InvalidTaskSequenceException,
+            $exception instanceof TaskAlreadyCompletedException,
+            $exception instanceof WrongLocationException => new JsonResponse(['error' => $exception->getMessage()], 409),
             $exception instanceof HttpExceptionInterface => new JsonResponse(['error' => $exception->getMessage()], $exception->getStatusCode()),
             default => new JsonResponse(['error' => 'Internal Server Error'], 500),
         };

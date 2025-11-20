@@ -22,6 +22,11 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\CurrentUser;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use OpenApi\Attributes as OA; // Importuj alias dla atrybutów
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use App\Dto\TaskCompletionRequestDto;
+use App\Entity\Task;
+use App\Entity\UserGame;
 use Webmozart\Assert\Assert;
 
 #[Route('/api/games')]
@@ -32,10 +37,13 @@ final class GameController extends AbstractController
         private readonly GameQueryService $gameQueryService,
         private readonly GamePlayService $gamePlayService,
         private readonly GameTaskRepository $gameTaskRepository,
+        private readonly SerializerInterface $serializer,
+        private readonly ValidatorInterface $validator,
     ) {
     }
 
     #[Route('', name: 'api_games_list', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getGames(Request $request): JsonResponse
     {
         try {
@@ -86,6 +94,7 @@ final class GameController extends AbstractController
         description: 'UUID gry',
         schema: new OA\Schema(type: 'string')
     )]
+    #[IsGranted('ROLE_USER')]
     public function getGameDetails(
         string $id,
         UuidValidator $uuidValidator
@@ -135,5 +144,46 @@ final class GameController extends AbstractController
         );
 
         return $this->json($responseDto, 201);
+    }
+
+    #[Route('/{userGameId}/tasks/{taskId}/complete', name: 'api_user_game_task_complete', methods: ['POST'])]
+    #[IsGranted('ROLE_USER')]
+    // Ensure UserGame and Task are automatically resolved from path parameters and security context
+    public function completeTask(
+        Request $request,
+        #[MapEntity(id: 'userGameId')] UserGame $userGame,
+        #[MapEntity(id: 'taskId')] Task $task,
+        #[CurrentUser] User $user // Current user for service layer
+    ): JsonResponse {
+        if ($userGame->getUser()->getId() !== $user->getId()) {
+            throw $this->createAccessDeniedException('You are not allowed to complete tasks for this game session.');
+        }
+
+        try {
+            /** @var TaskCompletionRequestDto $taskCompletionRequestDto */
+            $taskCompletionRequestDto = $this->serializer->deserialize($request->getContent(), TaskCompletionRequestDto::class, 'json');
+
+            $errors = $this->validator->validate($taskCompletionRequestDto);
+            if (count($errors) > 0) {
+                $errorMessages = [];
+                foreach ($errors as $error) {
+                    $errorMessages[] = $error->getMessage();
+                }
+                return new JsonResponse(['errors' => $errorMessages], 400);
+            }
+
+            $responseDto = $this->gamePlayService->completeTask(
+                $user,
+                $userGame,
+                $task,
+                $taskCompletionRequestDto
+            );
+
+            return $this->json($responseDto);
+        } catch (\Exception $e) {
+            // This will be caught by the ExceptionListener, but for now, we'll return a generic error.
+            // The ExceptionListener will map custom exceptions to 409, etc.
+            return new JsonResponse(['error' => $e->getMessage()], 500);
+        }
     }
 }

@@ -184,6 +184,27 @@
 }
 ```
 
+#### GET /api/games/{userGameId}/active
+- **Description**: Get details for a single active game session.
+- **Headers**: Authorization: Bearer {token}
+- **Response** (200):
+```json
+{
+  "userGameId": "uuid",
+  "gameId": "uuid",
+  "gameName": "Game Name",
+  "startedAt": "2024-01-01T00:00:00Z",
+  "completedTasks": 2,
+  "totalTasks": 5,
+  "currentTask": {
+    "id": "uuid",
+    "name": "Current Task",
+    "sequenceOrder": 3
+  }
+}
+```
+- **Error Responses**: 404 (Not Found - if `userGameId` does not correspond to an active game for the current user)
+
 #### GET /api/games/completed
 - **Description**: Get user's completed games with pagination
 - **Headers**: Authorization: Bearer {token}
@@ -213,95 +234,37 @@
 }
 ```
 
-### Admin Endpoints (Require ADMIN role)
+### Panel Administracyjny (Sonata Admin)
 
-#### GET /admin/games
-- **Description**: Get all games (including unavailable) for admin
-- **Headers**: Authorization: Bearer {token}
-- **Query Parameters**:
-    - `page` (default: 1)
-    - `limit` (default: 10, max: 50)
-    - `available` (boolean filter)
-- **Response**: Similar to games list but with admin fields
+Panel administracyjny jest realizowany za pomocą `SonataAdminBundle` i zapewnia interfejs webowy do zarządzania kluczowymi zasobami aplikacji. Dostęp do panelu jest ograniczony do użytkowników z rolą `ROLE_ADMIN`. Panel nie udostępnia publicznego API REST, lecz serwuje strony HTML z formularzami i listami danych.
 
-#### POST /admin/games
-- **Description**: Create a new game
-- **Headers**: Authorization: Bearer {token}
-- **Request Body**:
-```json
-{
-  "name": "New Game",
-  "description": "Game description",
-  "isAvailable": false
-}
-```
-- **Response**: 201 with game details:
-```json
-{
-  "id": "uuid",
-  "name": "Game Name",
-  "description": "Game description"
-}
-```
+Główne sekcje panelu administracyjnego:
 
-#### PUT /admin/games/{id}
-- **Description**: Update a game
-- **Headers**: Authorization: Bearer {token}
-- **Request Body**: Partial game data
-- **Response**: 200 with updated game
+#### Zarządzanie Grami i Zadaniami
+- **Opis**: Umożliwia administratorom pełne zarządzanie (CRUD) grami (`Game`) i zadaniami (`Task`). Administratorzy mogą tworzyć nowe gry, definiować ich właściwości (nazwa, opis, dostępność) oraz zarządzać powiązanymi z nimi zadaniami.
+- **Funkcjonalności**:
+    - Tworzenie, edycja i listowanie gier.
+    - **Oznaczanie gier jako usuniętych (soft delete)**. Usunięte gry nie będą widoczne dla użytkowników, ale pozostaną w bazie danych do celów archiwalnych.
+    - Tworzenie, edycja i listowanie zadań.
+    - **Oznaczanie zadań jako usuniętych (soft delete)**.
+    - W ramach edycji gry, możliwość dodawania, usuwania i zmiany kolejności zadań w grze.
+- **Główne ścieżki**:
+    - `/admin/app/game/list` - Lista gier.
+    - `/admin/app/game/create` - Formularz tworzenia nowej gry.
+    - `/admin/app/game/{id}/edit` - Edycja gry i jej zadań.
+    - `/admin/app/game/{id}/delete` - Akcja oznaczania gry jako usuniętej.
+    - `/admin/app/task/list` - Lista wszystkich zadań.
+    - `/admin/app/task/create` - Formularz tworzenia nowego zadania.
 
-#### DELETE /admin/games/{id}
-- **Description**: Soft delete a game
-- **Headers**: Authorization: Bearer {token}
-- **Response**: 204 No Content
-
-#### POST /admin/games/{gameId}/tasks
-- **Description**: Add task to game
-- **Headers**: Authorization: Bearer {token}
-- **Request Body**:
-```json
-{
-  "taskId": "uuid",
-  "sequenceOrder": 1,
-  "latitude": 52.229675,
-  "longitude": 21.012230,
-  "allowedDistance": 50
-}
-```
-- **Response**: 201 with game task details
-
-#### DELETE /admin/games/{gameId}/tasks/{gameTaskId}
-- **Description**: Remove task from game (soft delete)
-- **Headers**: Authorization: Bearer {token}
-- **Response**: 204 No Content
-
-#### GET /admin/stats/completions
-- **Description**: Get game completion statistics
-- **Headers**: Authorization: Bearer {token}
-- **Query Parameters**:
-    - `gameId` (filter by game)
-    - `fromDate`, `toDate` (date range)
-    - `page` (default: 1)
-    - `limit` (default: 10, max: 50)
-- **Response** (200):
-```json
-{
-  "data": [
-    {
-      "userEmail": "user@example.com",
-      "gameName": "Game Name",
-      "completedAt": "2024-01-01T02:30:00Z",
-      "completionTime": 9000
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 10,
-    "total": 25,
-    "pages": 3
-  }
-}
-```
+#### Statystyki Ukończonych Gier
+- **Opis**: Sekcja tylko do odczytu, prezentująca statystyki dotyczące gier ukończonych przez użytkowników. Pozwala na monitorowanie aktywności i popularności gier.
+- **Funkcjonalności**:
+    - Wyświetlanie listy ukończonych gier (`UserGame`) z informacjami o użytkowniku, nazwie gry, datach rozpoczęcia i zakończenia oraz czasie trwania.
+    - Filtrowanie wyników po grze i użytkowniku.
+    - Sortowanie wyników po dowolnej kolumnie.
+    - Paginacja wyników.
+- **Główna ścieżka**:
+    - `/admin/app/usergame/list` - Lista ukończonych gier.
 
 ## 3. Authentication and Authorization
 

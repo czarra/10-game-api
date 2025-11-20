@@ -22,6 +22,10 @@ final class GameTaskType extends AbstractType
                 'choice_label' => 'name',
                 'label' => 'Zadanie',
                 'placeholder' => 'Wybierz zadanie',
+                'query_builder' => function (\Doctrine\ORM\EntityRepository $er) {
+                    return $er->createQueryBuilder('t')
+                        ->andWhere('t.deletedAt IS NULL');
+                },
             ])
             ->add('sequenceOrder', NumberType::class, [
                 'label' => 'Kolejność',

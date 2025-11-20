@@ -8,12 +8,22 @@ use App\Form\GameTaskType;
 use Sonata\AdminBundle\Admin\AbstractAdmin;
 use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ListMapper;
+use Sonata\AdminBundle\Datagrid\ProxyQueryInterface;
 use Sonata\AdminBundle\Form\FormMapper;
 use Sonata\AdminBundle\Form\Type\CollectionType;
 use Sonata\AdminBundle\Show\ShowMapper;
 
 final class GameAdmin extends AbstractAdmin
 {
+    protected function configureQuery(ProxyQueryInterface $query): ProxyQueryInterface
+    {
+        $queryBuilder = $query->getQueryBuilder();
+        $rootAlias = current($queryBuilder->getRootAliases());
+        $queryBuilder->andWhere(sprintf('%s.deletedAt IS NULL', $rootAlias));
+
+        return $query;
+    }
+
     protected function configureFormFields(FormMapper $form): void
     {
         $form

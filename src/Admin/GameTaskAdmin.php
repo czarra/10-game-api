@@ -23,6 +23,10 @@ final class GameTaskAdmin extends AbstractAdmin
                 'property' => 'name', // Assuming Task has a 'name' property
                 'btn_add' => false, // Disables the add button
                 'placeholder' => 'Select a Task',
+                'query_builder' => function (\Doctrine\ORM\EntityRepository $er) {
+                    return $er->createQueryBuilder('o')
+                        ->andWhere('o.deletedAt IS NULL');
+                },
             ])
             ->add('sequenceOrder', IntegerType::class);
     }

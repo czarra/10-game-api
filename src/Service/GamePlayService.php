@@ -4,11 +4,18 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Dto\NextTaskDto;
+use App\Dto\TaskCompletionRequestDto;
+use App\Dto\TaskCompletionResponseDto;
 use App\Entity\Game;
+use App\Entity\GameTask;
 use App\Entity\Task;
 use App\Entity\User;
 use App\Entity\UserGame;
 use App\Entity\UserGameTask;
+use App\Exception\InvalidTaskSequenceException;
+use App\Exception\TaskAlreadyCompletedException;
+use App\Exception\WrongLocationException;
 use App\Repository\GameRepository;
 use App\Repository\GameTaskRepository;
 use App\Repository\UserGameRepository;
@@ -19,9 +26,9 @@ use App\Service\Exception\GameUnavailableException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
-use Symfony\Component\Security\Core\User\UserInterface;
+use Webmozart\Assert\Assert;
 
-class GamePlayService
+final class GamePlayService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
@@ -29,14 +36,13 @@ class GamePlayService
         private readonly UserGameRepository $userGameRepository,
         private readonly GameTaskRepository $gameTaskRepository,
         private readonly UserGameTaskRepository $userGameTaskRepository,
-        private readonly GeolocationService $geolocationService // Assuming this service will be created later
+        private readonly GeolocationService $geolocationService
     ) {
     }
 
     public function startGameForUser(Game $game, User $user): UserGame
     {
         if (!$game->isAvailable()) {
-
             throw new GameUnavailableException();
         }
 
@@ -58,83 +64,109 @@ class GamePlayService
         return $userGame;
     }
 
-    /**
-     * Completes a task within an active user game.
-     *
-     * @param User $user The user completing the task.
-     * @param string $userGameId The ID of the active user game.
-     * @param string $taskId The ID of the task to complete.
-     * @param float $latitude The current latitude of the user.
-     * @param float $longitude The current longitude of the user.
-     * @return UserGameTask The newly created UserGameTask entity.
-     * @throws NotFoundHttpException If the user game or task is not found.
-     * @throws BadRequestHttpException If the task is not part of the game or location is too far.
-     */
-    public function completeTask(User $user, string $userGameId, string $taskId, float $latitude, float $longitude): UserGameTask
-    {
-        $userGame = $this->userGameRepository->findOneBy(['id' => $userGameId, 'user' => $user, 'completedAt' => null]);
-
-        if (!$userGame) {
-            throw new NotFoundHttpException('Active game session not found.');
+    public function completeTask(
+        User $user,
+        UserGame $userGame,
+        Task $task,
+        TaskCompletionRequestDto $requestDto
+    ): TaskCompletionResponseDto {
+        // 1. Basic checks
+        if ($userGame->getCompletedAt() !== null) {
+            throw new BadRequestHttpException('This game session is already completed.');
         }
 
-        $game = $userGame->getGame();
-        $task = $this->entityManager->getRepository(Task::class)->find($taskId);
+        Assert::eq($userGame->getUser(), $user, 'User does not own this game session.');
 
-        if (!$task) {
-            throw new NotFoundHttpException('Task not found.');
-        }
-
-        $gameTask = $this->gameTaskRepository->findOneBy(['game' => $game, 'task' => $task]);
-
+        // 2. Find the GameTask linking the Game and the Task
+        $gameTask = $this->gameTaskRepository->findOneBy(['game' => $userGame->getGame(), 'task' => $task]);
         if (!$gameTask) {
             throw new BadRequestHttpException('This task is not part of the current game.');
         }
 
-        // Check if task is already completed in this user game session
-        $existingUserGameTask = $this->userGameTaskRepository->findOneBy(['userGame' => $userGame, 'gameTask' => $gameTask]);
-        if ($existingUserGameTask) {
-            throw new BadRequestHttpException('Task already completed in this session.');
+        // 3. Check if this task is the next one in sequence
+        $lastCompletedTask = $this->userGameTaskRepository->findLastCompletedTaskForUserGame($userGame);
+
+        if ($lastCompletedTask === null) {
+            // This is the first task to be completed. It must be the first in the game's sequence.
+            $firstGameTask = $this->gameTaskRepository->findFirstTaskForGame($userGame->getGame());
+            if ($gameTask !== $firstGameTask) {
+                throw new InvalidTaskSequenceException('This is not the first task in the game.');
+            }
+        } else {
+            // Find what the actual next task should be
+            $nextTaskInSequence = $this->gameTaskRepository->findNextTaskInSequence(
+                $userGame->getGame(),
+                $lastCompletedTask->getGameTask()->getSequenceOrder()
+            );
+
+            if ($gameTask !== $nextTaskInSequence) {
+                throw new InvalidTaskSequenceException();
+            }
         }
 
-        // Geolocation validation (assuming GeolocationService is implemented)
+        // 4. Check if task is already completed (redundant due to sequence check, but good for data integrity)
+        $existingUserGameTask = $this->userGameTaskRepository->findOneBy(['userGame' => $userGame, 'gameTask' => $gameTask]);
+        if ($existingUserGameTask) {
+            throw new TaskAlreadyCompletedException();
+        }
+
+        // 5. Geolocation validation
         if (!$this->geolocationService->isWithinDistance(
             (float) $task->getLatitude(),
             (float) $task->getLongitude(),
-            $latitude,
-            $longitude,
+            $requestDto->latitude,
+            $requestDto->longitude,
             $task->getAllowedDistance()
         )) {
-            throw new BadRequestHttpException('You are too far from the task location.');
+            throw new WrongLocationException();
         }
 
+        // 6. Persist the completion
         $userGameTask = new UserGameTask();
         $userGameTask->setUserGame($userGame);
         $userGameTask->setGameTask($gameTask);
 
         $this->entityManager->persist($userGameTask);
-        $this->entityManager->flush();
+        $this->entityManager->flush(); // Flush to make it available for the next queries
 
-        // Optionally, check if all tasks are completed and finish the game
-        $this->checkAndFinishGame($userGame);
+        // 7. Check if game is finished and determine next task
+        $gameCompleted = $this->checkAndFinishGame($userGame);
+        $nextTaskDto = null;
 
-        return $userGameTask;
+        if (!$gameCompleted) {
+            $nextGameTask = $this->gameTaskRepository->findNextTaskInSequence($userGame->getGame(), $gameTask->getSequenceOrder());
+            if ($nextGameTask) {
+                $nextTaskDto = new NextTaskDto(
+                    $nextGameTask->getTask()->getId(),
+                    $nextGameTask->getTask()->getName(),
+                    $nextGameTask->getTask()->getDescription(),
+                    $nextGameTask->getSequenceOrder()
+                );
+            }
+        }
+
+        // 8. Return response DTO
+        return new TaskCompletionResponseDto(true, $nextTaskDto, $gameCompleted);
     }
 
     /**
      * Checks if all tasks in a user game are completed and finishes the game if so.
-     *
-     * @param UserGame $userGame The user game to check.
+     * Returns true if the game was just completed, false otherwise.
      */
-    private function checkAndFinishGame(UserGame $userGame): void
+    private function checkAndFinishGame(UserGame $userGame): bool
     {
-        $game = $userGame->getGame();
-        $totalGameTasks = $this->gameTaskRepository->count(['game' => $game]);
+        $totalGameTasks = $this->gameTaskRepository->count(['game' => $userGame->getGame()]);
         $completedUserGameTasks = $this->userGameTaskRepository->count(['userGame' => $userGame]);
 
         if ($totalGameTasks > 0 && $completedUserGameTasks >= $totalGameTasks) {
-            $userGame->setCompletedAt(new \DateTimeImmutable());
-            $this->entityManager->flush();
+            if ($userGame->getCompletedAt() === null) {
+                $userGame->setCompletedAt(new \DateTimeImmutable());
+                $this->entityManager->flush();
+                return true; // Game was just completed
+            }
         }
+
+        return false; // Game is not yet completed or was already completed
     }
 }
+
