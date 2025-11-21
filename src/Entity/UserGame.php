@@ -31,7 +31,7 @@ class UserGame
     private \DateTimeImmutable $startedAt;
 
     #[ORM\Column(name: 'completed_at', type: 'datetimetz_immutable', nullable: true)]
-    private ?\DateTimeImmutable $completedAt;
+    private ?\DateTimeImmutable $completedAt = null;
 
     public function __construct()
     {

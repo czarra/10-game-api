@@ -37,6 +37,11 @@ The system is composed of two main parts:
 - **Containerization:** Docker
 - **CI/CD:** GitHub Actions
 
+### Testing
+- **Unit & Functional Tests:** PHPUnit
+- **API Testing:** Symfony TestClient
+- **Test Data Generation:** DoctrineFixtures / Foundry
+
 ## Getting Started Locally
 
 To set up and run the project on your local machine, follow these steps.
