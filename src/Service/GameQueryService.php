@@ -14,6 +14,7 @@ use App\Repository\GameRepository;
 use App\Repository\UserGameRepository;
 use Doctrine\ORM\Exception\ORMException;
 use Psr\Log\LoggerInterface;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 final class GameQueryService
@@ -124,4 +125,39 @@ final class GameQueryService
 
         return $result;
     }
+
+    public function findActiveGameById(string $userGameId, UserInterface $user): ActiveGameListItemDto
+    {
+        $gameData = $this->userGameRepository->findActiveGameDetails($userGameId, $user);
+
+        if (null === $gameData) {
+            throw new NotFoundHttpException('Active game not found.');
+        }
+        $currentTask = null;
+
+        if (isset($gameData['currentTask']) && null !== $gameData['currentTask']) {
+
+            $taskData = $gameData['currentTask'];
+
+            $currentTask = new CurrentTaskDto(
+                id: $taskData['id']->toRfc4122(),
+                name: $taskData['name'],
+                description: $taskData['description'],
+                sequenceOrder: $taskData['sequenceOrder'],
+            );
+        }
+
+        return new ActiveGameListItemDto(
+            userGameId: $gameData['userGameId']->toRfc4122(),
+            gameId: $gameData['gameId']->toRfc4122(),
+            gameName: $gameData['gameName'],
+            description: $gameData['gameDescription'],
+            startedAt: $gameData['startedAt'],
+            completedTasks: (int) $gameData['completedTasks'],
+            totalTasks: (int) $gameData['totalTasks'],
+            currentTask: $currentTask
+        );
+
+    }
+
 }

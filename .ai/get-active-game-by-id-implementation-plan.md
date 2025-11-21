@@ -17,13 +17,13 @@ Celem tego punktu końcowego jest dostarczenie szczegółowych informacji o poje
 ## 3. Wykorzystywane typy
 Do implementacji niezbędne będą następujące klasy DTO (Data Transfer Object) w przestrzeni nazw `App\Dto`:
 
-1.  **`GameMoreDetailsDto` (Nowy)**: Reprezentuje pełną strukturę odpowiedzi dla pojedynczej gry.
+1.  **`ActiveGameListItemDto` (Istniejący)**: Reprezentuje pełną strukturę odpowiedzi dla pojedynczej gry.
     ```php
     declare(strict_types=1);
 
     namespace App\Dto;
 
-    final readonly class GameMoreDetailsDto
+    final readonly class ActiveGameListItemDto
     {
         public function __construct(
             public string $userGameId,
@@ -48,6 +48,7 @@ Do implementacji niezbędne będą następujące klasy DTO (Data Transfer Object
         public function __construct(
             public string $id, // ID z encji GameTask
             public string $name,
+            public string $description,
             public int $sequenceOrder,
         ) {}
     }
@@ -88,7 +89,7 @@ Do implementacji niezbędne będą następujące klasy DTO (Data Transfer Object
 6.  Metoda w repozytorium konstruuje zapytanie DQL lub QueryBuilder, które pobiera `UserGame` na podstawie `id` (`userGameId`) oraz `user_id`, a także sprawdza, czy `completedAt` jest `NULL`. Zapytanie to za pomocą `JOIN` i podzapytań agreguje wszystkie niezbędne dane (nazwa gry, liczba zadań, postęp, następne zadanie) w ramach jednego zapytania do bazy danych.
 7.  Jeśli repozytorium nie znajdzie pasującego rekordu, zwraca `null`.
 8.  `GameQueryService` sprawdza wynik z repozytorium. Jeśli jest `null`, rzuca wyjątek `NotFoundHttpException`, co spowoduje zwrócenie odpowiedzi `404 Not Found`.
-9.  Jeśli dane zostały znalezione, serwis mapuje je na obiekt `GameMoreDetailsDto` (wraz z zagnieżdżonym `CurrentTaskDto`).
+9.  Jeśli dane zostały znalezione, serwis mapuje je na obiekt `ActiveGameListItemDto` (wraz z zagnieżdżonym `CurrentTaskDto`).
 10. Kontroler otrzymuje obiekt DTO, serializuje go i zwraca w `JsonResponse` z kodem `200 OK`.
 
 ## 6. Względy bezpieczeństwa
@@ -108,9 +109,9 @@ Do implementacji niezbędne będą następujące klasy DTO (Data Transfer Object
 - **Indeksy bazodanowe**: Należy upewnić się, że kolumny `user_games.id` i `user_games.user_id` są zindeksowane, co jest domyślnym zachowaniem dla klucza głównego i obcego.
 
 ## 9. Etapy wdrożenia
-1.  **Utworzenie DTO**: Zaimplementować klasę `GameMoreDetailsDto` w katalogu `src/Dto/`.
+1.  **Utworzenie DTO**: Zaimplementować klasę `ActiveGameListItemDto` w katalogu `src/Dto/`.
 2.  **Aktualizacja Repozytorium**: Dodać nową metodę `findActiveGameDetails(string $userGameId, UserInterface $user): ?array` w `src/Repository/UserGameRepository.php`. Metoda ta powinna zawierać zoptymalizowane zapytanie DQL/QueryBuilder.
-3.  **Aktualizacja Serwisu**: Dodać metodę `findActiveGameById(string $userGameId, UserInterface $user): GameMoreDetailsDto` w `src/Service/GameQueryService.php`. Metoda będzie wywoływać repozytorium, obsługiwać `NotFoundHttpException` i mapować wyniki na DTO. Należy upewnić się, że nie modyfikuje ona istniejącej logiki `findActiveGamesForUser`.
+3.  **Aktualizacja Serwisu**: Dodać metodę `findActiveGameById(string $userGameId, UserInterface $user): ActiveGameListItemDto` w `src/Service/GameQueryService.php`. Metoda będzie wywoływać repozytorium, obsługiwać `NotFoundHttpException` i mapować wyniki na DTO. Należy upewnić się, że nie modyfikuje ona istniejącej logiki `findActiveGamesForUser`.
 4.  **Utworzenie Metody w Kontrolerze**:
     - Dodać nową metodę w `src/Controller/GameController.php`.
     - Zdefiniować dla niej trasę `GET /api/games/{userGameId}/active` z atrybutem `#[Route]` i walidacją `uuid` dla parametru.

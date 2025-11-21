@@ -66,14 +66,20 @@ final class GameController extends AbstractController
     #[IsGranted('ROLE_USER')]
     public function getActiveGames(#[CurrentUser] User $user): JsonResponse
     {
-        try {
-
         $activeGames = $this->gameQueryService->findActiveGamesForUser($user);
 
-        }catch (\Throwable $exception){
-            dump($exception->getMessage());die;
-        }
         return $this->json(['data' => $activeGames]);
+    }
+
+    #[Route('/{userGameId}/active', name: 'get_active_game_by_id', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    public function getActiveGameById(
+        string $userGameId,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        $dto = $this->gameQueryService->findActiveGameById($userGameId, $user);
+
+        return $this->json(['data' => $dto]);
     }
 
     #[Route('/{id}', name: 'api_game_details_get', methods: ['GET'])]

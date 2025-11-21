@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Game;
+use App\Entity\GameTask;
 use App\Entity\User;
 use App\Entity\UserGame;
+use App\Entity\UserGameTask;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\User\UserInterface;
@@ -117,5 +119,59 @@ class UserGameRepository extends ServiceEntityRepository
         }
         return $games;
 
+    }
+
+    public function findActiveGameDetails(string $userGameId, UserInterface $user): ?array
+    {
+        $qb = $this->createQueryBuilder('ug');
+
+        // Main query to get game details and task counts
+        $qb->select(
+            'ug.id AS userGameId',
+            'g.id AS gameId',
+            'g.name AS gameName',
+            'g.description AS gameDescription',
+            'ug.startedAt',
+            '(SELECT COUNT(ugt.id) FROM App\Entity\UserGameTask ugt WHERE ugt.userGame = ug) AS completedTasks',
+            '(SELECT COUNT(gt.id) FROM App\Entity\GameTask gt WHERE gt.game = g) AS totalTasks'
+        )
+            ->innerJoin('ug.game', 'g')
+            ->where('ug.user = :user')
+            ->andWhere('ug.id = :userGameId')
+            ->andWhere('ug.completedAt IS NULL')
+            ->setParameter('user', $user)
+            ->setParameter('userGameId', $userGameId, 'uuid');
+
+        $gameDetails = $qb->getQuery()->getOneOrNullResult();
+
+        if (null === $gameDetails) {
+            return null;
+        }
+
+        // Subquery to find the next task
+        $nextTaskQb = $this->getEntityManager()->createQueryBuilder();
+        $nextTask = $nextTaskQb
+            ->select('gt.id', 't.name', 't.description', 'gt.sequenceOrder')
+            ->from(GameTask::class, 'gt')
+            ->innerJoin('gt.task', 't')
+            ->leftJoin(
+                UserGameTask::class,
+                'ugt',
+                'WITH',
+                'ugt.gameTask = gt AND ugt.userGame = :userGameId'
+            )
+            ->where('gt.game = :gameId')
+            ->andWhere('ugt.id IS NULL')
+            ->orderBy('gt.sequenceOrder', 'ASC')
+            ->setParameter('userGameId', $userGameId, 'uuid')
+            ->setParameter('gameId', $gameDetails['gameId'], 'uuid')
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+
+        $gameDetails['currentTask'] = $nextTask;
+        $gameDetails['startedAt'] = $gameDetails['startedAt']->format(\DateTime::ATOM);
+
+        return $gameDetails;
     }
 }
