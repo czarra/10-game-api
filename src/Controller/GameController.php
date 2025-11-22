@@ -7,6 +7,8 @@ namespace App\Controller;
 use App\Dto\CurrentTaskDto;
 use App\Dto\GameDetailsDto;
 use App\Dto\StartGameResponseDto;
+use App\Dto\CompletedGameListItemDto;
+use App\Dto\PaginationDto;
 use App\Entity\Game;
 use App\Entity\User;
 use App\Repository\GameTaskRepository;
@@ -80,6 +82,59 @@ final class GameController extends AbstractController
         $dto = $this->gameQueryService->findActiveGameById($userGameId, $user);
 
         return $this->json(['data' => $dto]);
+    }
+
+    #[Route('/completed', name: 'api_completed_games', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
+    #[OA\Response(
+        response: 200,
+        description: 'Lista ukończonych gier dla zalogowanego użytkownika',
+        content: new OA\JsonContent(
+            properties: [
+                new OA\Property(property: 'data', type: 'array', items: new OA\Items(ref: new Model(type: CompletedGameListItemDto::class))),
+                new OA\Property(property: 'pagination', ref: new Model(type: PaginationDto::class))
+            ],
+            type: 'object'
+        )
+    )]
+    #[OA\Parameter(
+        name: 'page',
+        in: 'query',
+        description: 'Numer strony wyników (domyślnie 1)',
+        schema: new OA\Schema(type: 'integer', minimum: 1)
+    )]
+    #[OA\Parameter(
+        name: 'limit',
+        in: 'query',
+        description: 'Liczba wyników na stronę (domyślnie 10, max 50)',
+        schema: new OA\Schema(type: 'integer', minimum: 1, maximum: 50)
+    )]
+    #[OA\Response(
+        response: 400,
+        description: 'Nieprawidłowe parametry zapytania'
+    )]
+    #[OA\Response(
+        response: 401,
+        description: 'Wymagane uwierzytelnienie'
+    )]
+    public function getCompletedGames(
+        Request $request,
+        #[CurrentUser] User $user
+    ): JsonResponse {
+        try {
+            $page = $request->query->getInt('page', 1);
+            $limit = $request->query->getInt('limit', 10);
+
+            Assert::greaterThan($page, 0, 'Page must be a positive integer.');
+            Assert::greaterThan($limit, 0, 'Limit must be a positive integer.');
+            Assert::lessThanOrEqual($limit, 50, 'Limit cannot be greater than 50.');
+        } catch (\InvalidArgumentException $e) {
+            return new JsonResponse(['error' => $e->getMessage()], 400);
+        }
+
+        $result = $this->gameQueryService->findCompletedForUser($user, $page, $limit);
+
+        return $this->json($result);
     }
 
     #[Route('/{id}', name: 'api_game_details_get', methods: ['GET'])]

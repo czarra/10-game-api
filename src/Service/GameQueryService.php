@@ -8,8 +8,12 @@ use App\Dto\ActiveGameListItemDto;
 use App\Dto\CurrentTaskDto;
 use App\Dto\GameDetailsDto;
 use App\Dto\GameListItemDto;
+use App\Dto\CompletedGameListItemDto;
+use App\Dto\PaginatedResponseDto;
+use App\Dto\PaginationDto;
 use App\Dto\TaskDetailsDto;
 use App\Entity\Game;
+use App\Entity\User;
 use App\Repository\GameRepository;
 use App\Repository\UserGameRepository;
 use Doctrine\ORM\Exception\ORMException;
@@ -17,7 +21,7 @@ use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\Security\Core\User\UserInterface;
 
-final class GameQueryService
+class GameQueryService
 {
     public function __construct(
         private readonly GameRepository $gameRepository,
@@ -26,7 +30,7 @@ final class GameQueryService
     ) {
     }
 
-    public function findAvailableGames(int $page, int $limit): array
+    public function findAvailableGames(int $page, int $limit): PaginatedResponseDto
     {
         $offset = ($page - 1) * $limit;
         $paginator = $this->gameRepository->createAvailableGamesPaginator($offset, $limit);
@@ -47,15 +51,15 @@ final class GameQueryService
             );
         }
 
-        return [
-            'data' => $dtos,
-            'pagination' => [
-                'page' => $page,
-                'limit' => $limit,
-                'total' => $total,
-                'pages' => $pages,
-            ],
-        ];
+        return new PaginatedResponseDto(
+            data: $dtos,
+            pagination: new PaginationDto(
+                page: $page,
+                limit: $limit,
+                total: $total,
+                pages: $pages
+            )
+        );
     }
 
     public function getGameDetails(string $gameId): ?GameDetailsDto
@@ -157,7 +161,56 @@ final class GameQueryService
             totalTasks: (int) $gameData['totalTasks'],
             currentTask: $currentTask
         );
-
     }
 
+    public function findCompletedForUser(UserInterface $user, int $page, int $limit): PaginatedResponseDto
+    {
+        if (!$user instanceof User) {
+            // This should not happen with a properly configured security setup
+            $this->logger->error('User is not an instance of App\Entity\User', ['userId' => $user->getUserIdentifier()]);
+            // Depending on the desired behavior, you might throw an exception or return an empty result.
+            // Returning an empty result is safer to prevent information leaks.
+            return new PaginatedResponseDto(
+                data: [],
+                pagination: new PaginationDto(
+                    page: $page,
+                    limit: $limit,
+                    total: 0,
+                    pages: 0
+                )
+            );
+        }
+
+        $paginator = $this->userGameRepository->findCompletedByUserPaginated($user, $page, $limit);
+
+        $total = count($paginator);
+        $pages = (int) ceil($total / $limit);
+
+        $dtos = [];
+        foreach ($paginator as $result) {
+            $userGame = $result[0];
+            $completionTime = (int) $result['completionTime'];
+            $totalTasks = (int) $result['totalTasks'];
+
+            $dtos[] = new CompletedGameListItemDto(
+                userGameId: $userGame->getId()->toRfc4122(),
+                gameId: $userGame->getGame()->getId()->toRfc4122(),
+                gameName: $userGame->getGame()->getName(),
+                startedAt: $userGame->getStartedAt()->format(\DateTime::ATOM),
+                completedAt: $userGame->getCompletedAt()->format(\DateTime::ATOM),
+                completionTime: $completionTime,
+                totalTasks: $totalTasks
+            );
+        }
+
+        return new PaginatedResponseDto(
+            data: $dtos,
+            pagination: new PaginationDto(
+                page: $page,
+                limit: $limit,
+                total: $total,
+                pages: $pages
+            )
+        );
+    }
 }

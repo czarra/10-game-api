@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Entity\UserGame;
 use App\Entity\UserGameTask;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\Tools\Pagination\Paginator;
 use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Uuid;
@@ -173,5 +174,31 @@ class UserGameRepository extends ServiceEntityRepository
         $gameDetails['startedAt'] = $gameDetails['startedAt']->format(\DateTime::ATOM);
 
         return $gameDetails;
+    }
+
+    /**
+     * @return Paginator<array{0: UserGame, completionTime: int, totalTasks: int}>
+     */
+    public function findCompletedByUserPaginated(User $user, int $page, int $limit): Paginator
+    {
+        $qb = $this->createQueryBuilder('ug')
+            ->select(
+                'ug',
+                'EXTRACT(EPOCH FROM (ug.completedAt - ug.startedAt)) AS completionTime',
+                'COUNT(gt.id) AS totalTasks'
+            )
+            ->innerJoin('ug.game', 'g')
+            ->leftJoin('g.gameTasks', 'gt')
+            ->where('ug.user = :user')
+            ->andWhere('ug.completedAt IS NOT NULL')
+            ->groupBy('ug.id, g.id')
+            ->setParameter('user', $user)
+            ->orderBy('ug.completedAt', 'DESC')
+            ->setFirstResult(($page - 1) * $limit)
+            ->setMaxResults($limit);
+
+        $query = $qb->getQuery();
+
+        return new Paginator($query, true);
     }
 }

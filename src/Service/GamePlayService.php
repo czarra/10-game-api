@@ -28,7 +28,7 @@ use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Webmozart\Assert\Assert;
 
-final class GamePlayService
+class GamePlayService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,

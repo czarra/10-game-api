@@ -11,7 +11,7 @@ use App\Service\Exception\EmailAlreadyExistsException;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-final class RegistrationService
+class RegistrationService
 {
     public function __construct(
         private readonly UserRepository $userRepository,

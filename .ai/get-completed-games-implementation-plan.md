@@ -106,7 +106,7 @@ Celem tego punktu końcowego jest dostarczenie zalogowanemu użytkownikowi listy
 2.  **Aktualizacja Repozytorium**: Dodaj metodę `findCompletedByUserPaginated(User $user, int $page, int $limit)` do klasy `UserGameRepository`. Zaimplementuj logikę zapytania za pomocą `QueryBuilder` i `Paginator`.
 3.  **Aktualizacja Serwisu**: Dodaj metodę `findCompletedForUser(UserInterface $user, int $page, int $limit)` do `GameQueryService`. Zaimplementuj logikę wywołania repozytorium i mapowania wyników na DTO.
 4.  **Utworzenie Trasy i Kontrolera**:
-    - Dodaj nową trasę `GET /api/games/completed` w `config/routes/api.yaml`, wskazując na nową metodę w `GameController`.
+    - W `src/Controller/GameController.php` dodaj nową metodę obsługującą trasę `GET /api/games/completed`.
     - Zaimplementuj nową metodę w `GameController`. Metoda powinna:
         - Być zabezpieczona (`#[IsGranted('IS_AUTHENTICATED_FULLY')]`).
         - Walidować parametry `page` i `limit`.

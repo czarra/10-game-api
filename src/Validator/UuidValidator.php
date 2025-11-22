@@ -6,7 +6,7 @@ namespace App\Validator;
 
 use Symfony\Component\Uid\Uuid;
 
-final class UuidValidator
+class UuidValidator
 {
     public function validate(string $uuid): bool
     {

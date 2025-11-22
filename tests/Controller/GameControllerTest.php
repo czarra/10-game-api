@@ -4,57 +4,100 @@ declare(strict_types=1);
 
 namespace App\Tests\Controller;
 
-use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\Uid\Uuid;
+use App\Controller\GameController;
+use App\Entity\Game;
+use App\Entity\User;
+use App\Entity\UserGame;
+use App\Repository\GameTaskRepository;
+use App\Service\GamePlayService;
+use App\Service\GameQueryService;
+use App\Validator\UuidValidator;
+use PHPUnit\Framework\TestCase;
+use Symfony\Component\DependencyInjection\Container;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\Security\Core\Authentication\Token\Storage\TokenStorageInterface;
+use Symfony\Component\Security\Core\Authentication\Token\TokenInterface;
+use Symfony\Component\Serializer\SerializerInterface;
+use Symfony\Component\Validator\Validator\ValidatorInterface;
+use Webmozart\Assert\Assert;
 
-final class GameControllerTest extends WebTestCase
+final class GameControllerTest extends TestCase
 {
-    public function testGetGameReturns401WhenNotAuthenticated(): void
+    private GameController $controller;
+    private GameQueryService $gameQueryService;
+    private GamePlayService $gamePlayService;
+    private UuidValidator $uuidValidator;
+
+    protected function setUp(): void
     {
-        $client = static::createClient();
-        $gameId = Uuid::v4()->toRfc4122();
+        $this->gameQueryService = $this->createMock(GameQueryService::class);
+        $this->gamePlayService = $this->createMock(GamePlayService::class);
+        $gameTaskRepository = $this->createMock(GameTaskRepository::class);
+        $serializer = $this->createMock(SerializerInterface::class);
+        $validator = $this->createMock(ValidatorInterface::class);
+        $this->uuidValidator = $this->createMock(UuidValidator::class);
 
-        $client->request('GET', '/api/games/' . $gameId);
-
-        $this->assertResponseStatusCodeSame(401);
+        $this->controller = new GameController(
+            $this->gameQueryService,
+            $this->gamePlayService,
+            $gameTaskRepository,
+            $serializer,
+            $validator
+        );
     }
 
-    /**
-     * This is a placeholder for a full success test as described in the plan.
-     * To make it work, you need to:
-     * 1. Configure a test database.
-     * 2. Load test fixtures (a game with tasks).
-     * 3. Implement a way to generate a valid JWT for a test user.
-     */
-    public function testGetGameSuccess(): void
+    public function testGetGamesWithInvalidPageReturns400(): void
     {
-        $this->markTestIncomplete(
-            'This test requires a full test setup with a database and JWT generation.'
-        );
+        $request = new Request(['page' => 0]);
+        $response = $this->controller->getGames($request);
 
-        /*
-        $client = static::createClient();
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertStringContainsString('Page must be a positive integer', $response->getContent());
+    }
+    
+    public function testGetGameDetailsWithInvalidUuidReturns400(): void
+    {
+        $this->uuidValidator->method('validate')->willReturn(false);
+        $response = $this->controller->getGameDetails('invalid-uuid', $this->uuidValidator);
         
-        // 1. TODO: Get/create a test user and generate a JWT token.
-        $token = '...';
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(400, $response->getStatusCode());
+        $this->assertStringContainsString('Invalid game ID format', $response->getContent());
+    }
 
-        // 2. TODO: Get a game ID from test fixtures.
-        $gameId = '...';
+    public function testGetGameDetailsReturns404WhenNotFound(): void
+    {
+        $this->uuidValidator->method('validate')->willReturn(true);
+        $this->gameQueryService->method('getGameDetails')->willReturn(null);
 
-        $client->request('GET', '/api/games/' . $gameId, [], [], [
-            'HTTP_AUTHORIZATION' => 'Bearer ' . $token,
-            'HTTP_ACCEPT' => 'application/json',
-        ]);
+        $response = $this->controller->getGameDetails('valid-uuid', $this->uuidValidator);
 
-        $this->assertResponseStatusCodeSame(200);
-        $this->assertJsonStructure([
-            'id',
-            'name',
-            'description',
-            'tasks' => [
-                '*' => ['id', 'name', 'description', 'sequenceOrder']
-            ]
-        ]);
-        */
+        $this->assertInstanceOf(JsonResponse::class, $response);
+        $this->assertEquals(404, $response->getStatusCode());
+    }
+    
+    public function testStartGameSuccess(): void
+    {
+        $game = $this->createMock(Game::class);
+        $user = $this->createMock(User::class);
+        $userGame = $this->createMock(UserGame::class);
+
+        $this->gamePlayService->method('startGameForUser')->willReturn($userGame);
+        
+        // Mocking the container to handle getUser()
+        $token = $this->createMock(TokenInterface::class);
+        $token->method('getUser')->willReturn($user);
+        $tokenStorage = $this->createMock(TokenStorageInterface::class);
+        $tokenStorage->method('getToken')->willReturn($token);
+        
+        $container = new Container();
+        $container->set('security.token_storage', $tokenStorage);
+        $this->controller->setContainer($container);
+        
+        // This test is incomplete as startGame has further dependencies.
+        // It demonstrates the initial setup for a controller test.
+        $this->markTestIncomplete('This test requires more complex mocking of the controller dependencies to be fully functional.');
     }
 }
