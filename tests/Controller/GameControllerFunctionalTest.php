@@ -23,7 +23,7 @@ final class GameControllerFunctionalTest extends WebTestCase
 
     public function testGetCompletedGamesReturns401ForUnauthenticatedUser(): void
     {
-        $client = static::createClient();
+        $client = static::createClient(['exception' => false]);
         $client->request('GET', '/api/games/completed');
 
         $this->assertResponseStatusCodeSame(401);
@@ -31,7 +31,7 @@ final class GameControllerFunctionalTest extends WebTestCase
 
     public function testGetCompletedGamesReturnsCorrectDataForAuthenticatedUser(): void
     {
-        $client = static::createClient();
+        $client = static::createClient(['exception' => false]);
         $user = UserFactory::createOne()->object();
         $game = GameFactory::createOne();
 
@@ -71,7 +71,7 @@ final class GameControllerFunctionalTest extends WebTestCase
     
     public function testGetCompletedGamesWithCustomPagination(): void
     {
-        $client = static::createClient();
+        $client = static::createClient(['exception' => false]);
         $user = UserFactory::createOne()->object();
         $game = GameFactory::createOne();
 
@@ -97,7 +97,7 @@ final class GameControllerFunctionalTest extends WebTestCase
 
     public function testGetCompletedGamesReturns400ForInvalidLimit(): void
     {
-        $client = static::createClient();
+        $client = static::createClient(['exception' => false]);
         $user = UserFactory::createOne()->object();
         
         $client->loginUser($user);

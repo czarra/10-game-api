@@ -127,7 +127,7 @@ final class GameController extends AbstractController
 
             Assert::greaterThan($page, 0, 'Page must be a positive integer.');
             Assert::greaterThan($limit, 0, 'Limit must be a positive integer.');
-            Assert::lessThanOrEqual($limit, 50, 'Limit cannot be greater than 50.');
+            Assert::lessThanEq($limit, 50, 'Limit cannot be greater than 50.');
         } catch (\InvalidArgumentException $e) {
             return new JsonResponse(['error' => $e->getMessage()], 400);
         }

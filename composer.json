@@ -90,6 +90,6 @@
         "symfony/css-selector": "6.4.*",
         "symfony/maker-bundle": "^1.64",
         "symfony/phpunit-bridge": "^6.4",
-        "zenstruck/foundry": "^2.8"
+        "zenstruck/foundry": "^1.37"
     }
 }
