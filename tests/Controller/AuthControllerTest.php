@@ -11,6 +11,7 @@ use App\Repository\UserTokenRepository;
 use App\Service\Exception\EmailAlreadyExistsException;
 use App\Service\RegistrationService;
 use Doctrine\ORM\EntityManagerInterface;
+use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use PHPUnit\Framework\TestCase;
@@ -26,7 +27,8 @@ final class AuthControllerTest extends TestCase
     private UserTokenRepository $userTokenRepository;
     private RegistrationService $registrationService;
     private JWTTokenManagerInterface $jwtManager;
-    private RefreshTokenManagerInterface $refreshTokenManager;
+    private RefreshTokenManagerInterface $refreshTokenManager; // Keep for save() mock
+    private RefreshTokenGeneratorInterface $refreshTokenGenerator; // New for create() mock
 
     protected function setUp(): void
     {
@@ -35,6 +37,7 @@ final class AuthControllerTest extends TestCase
         $this->registrationService = $this->createMock(RegistrationService::class);
         $this->jwtManager = $this->createMock(JWTTokenManagerInterface::class);
         $this->refreshTokenManager = $this->createMock(RefreshTokenManagerInterface::class);
+        $this->refreshTokenGenerator = $this->createMock(RefreshTokenGeneratorInterface::class);
 
         $this->controller = new AuthController(
             $this->entityManager,
@@ -42,6 +45,7 @@ final class AuthControllerTest extends TestCase
             $this->registrationService,
             $this->jwtManager,
             $this->refreshTokenManager,
+            $this->refreshTokenGenerator,
             3600
         );
     }
@@ -59,7 +63,10 @@ final class AuthControllerTest extends TestCase
         $refreshToken->method('getRefreshToken')->willReturn('fake_refresh_token');
 
         $this->registrationService->method('registerUser')->willReturn($user);
-        $this->refreshTokenManager->method('create')->willReturn($refreshToken);
+        // Mock createForUserWithTtl for the generator
+        $this->refreshTokenGenerator->method('createForUserWithTtl')->willReturn($refreshToken);
+        // Mock save for the manager
+        $this->refreshTokenManager->method('save')->with($refreshToken);
         $this->jwtManager->method('create')->willReturn('fake_jwt_token');
 
         $response = $this->controller->register($dto);

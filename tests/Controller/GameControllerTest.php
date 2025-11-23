@@ -56,12 +56,12 @@ final class GameControllerTest extends TestCase
         $this->assertEquals(400, $response->getStatusCode());
         $this->assertStringContainsString('Page must be a positive integer', $response->getContent());
     }
-    
+
     public function testGetGameDetailsWithInvalidUuidReturns400(): void
     {
         $this->uuidValidator->method('validate')->willReturn(false);
         $response = $this->controller->getGameDetails('invalid-uuid', $this->uuidValidator);
-        
+
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertEquals(400, $response->getStatusCode());
         $this->assertStringContainsString('Invalid game ID format', $response->getContent());
@@ -77,7 +77,7 @@ final class GameControllerTest extends TestCase
         $this->assertInstanceOf(JsonResponse::class, $response);
         $this->assertEquals(404, $response->getStatusCode());
     }
-    
+
     public function testStartGameSuccess(): void
     {
         $game = $this->createMock(Game::class);
@@ -85,17 +85,17 @@ final class GameControllerTest extends TestCase
         $userGame = $this->createMock(UserGame::class);
 
         $this->gamePlayService->method('startGameForUser')->willReturn($userGame);
-        
+
         // Mocking the container to handle getUser()
         $token = $this->createMock(TokenInterface::class);
         $token->method('getUser')->willReturn($user);
         $tokenStorage = $this->createMock(TokenStorageInterface::class);
         $tokenStorage->method('getToken')->willReturn($token);
-        
+
         $container = new Container();
         $container->set('security.token_storage', $tokenStorage);
         $this->controller->setContainer($container);
-        
+
         // This test is incomplete as startGame has further dependencies.
         // It demonstrates the initial setup for a controller test.
         $this->markTestIncomplete('This test requires more complex mocking of the controller dependencies to be fully functional.');

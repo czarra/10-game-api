@@ -10,6 +10,7 @@ use App\Repository\UserTokenRepository;
 use App\Service\Exception\EmailAlreadyExistsException;
 use App\Service\RegistrationService;
 use Doctrine\ORM\EntityManagerInterface;
+use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -29,6 +30,7 @@ final class AuthController extends AbstractController
         private readonly RegistrationService $registrationService,
         private readonly JWTTokenManagerInterface $jwtManager,
         private readonly RefreshTokenManagerInterface $refreshTokenManager,
+        private readonly RefreshTokenGeneratorInterface $refreshTokenGenerator,
         #[Autowire('%gesdinet_jwt_refresh_token.ttl%')]
         private readonly int $refreshTokenTtl,
     ) {
@@ -51,14 +53,7 @@ final class AuthController extends AbstractController
             ], Response::HTTP_CONFLICT);
         }
 
-        $refreshToken = $this->refreshTokenManager->create();
-        $refreshToken->setUsername($user->getUserIdentifier());
-        $refreshToken->setRefreshToken();
-
-        $validityPeriod = new \DateInterval(sprintf('PT%sS', $this->refreshTokenTtl));
-        $valid = (new \DateTime())->add($validityPeriod);
-        $refreshToken->setValid($valid);
-
+        $refreshToken = $this->refreshTokenGenerator->createForUserWithTtl($user, $this->refreshTokenTtl);
         $this->refreshTokenManager->save($refreshToken);
 
         return new JsonResponse([

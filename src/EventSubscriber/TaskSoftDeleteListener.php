@@ -6,22 +6,16 @@ namespace App\EventSubscriber;
 
 use App\Entity\GameTask;
 use App\Entity\Task;
-use Doctrine\Bundle\DoctrineBundle\EventSubscriber\EventSubscriberInterface;
+use Doctrine\Bundle\DoctrineBundle\Attribute\AsDoctrineListener;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\Event\LifecycleEventArgs;
 use Gedmo\SoftDeleteable\SoftDeleteableListener;
 
-final class TaskSoftDeleteSubscriber implements EventSubscriberInterface
+#[AsDoctrineListener(event: SoftDeleteableListener::PRE_SOFT_DELETE)]
+final class TaskSoftDeleteListener
 {
     public function __construct(private readonly EntityManagerInterface $em)
     {
-    }
-
-    public function getSubscribedEvents(): array
-    {
-        return [
-            SoftDeleteableListener::PRE_SOFT_DELETE,
-        ];
     }
 
     public function preSoftDelete(LifecycleEventArgs $args): void
