@@ -48,9 +48,6 @@ services:
         tags:
             - { name: sonata.admin, manager_type: orm, group: "Statystyki", label: "Ukończone Gry", model_class: App\Entity\UserGame }
 
-#    App\EventSubscriber\TaskSoftDeleteListener:
-#        public: false
-#        autoconfigure: false
 
 
 
