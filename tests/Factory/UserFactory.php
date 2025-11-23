@@ -6,6 +6,7 @@ namespace App\Tests\Factory;
 
 use App\Entity\User;
 use App\Repository\UserRepository;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 use Zenstruck\Foundry\ModelFactory;
 use Zenstruck\Foundry\Proxy;
 use Zenstruck\Foundry\RepositoryProxy;
@@ -35,8 +36,22 @@ final class UserFactory extends ModelFactory
         return [
             'email' => self::faker()->email(),
             'roles' => ['ROLE_USER'],
-            'password' => 'password',
+            'password' => 'password', // This will be hashed by withHashedPassword
         ];
+    }
+
+    public function withHashedPassword(UserPasswordHasherInterface $hasher, string $plainPassword = 'password'): self
+    {
+        return $this->afterInstantiate(function(User $user) use ($hasher, $plainPassword) {
+            $user->setPassword($hasher->hashPassword($user, $plainPassword));
+        });
+    }
+
+    public function asAdmin(): self
+    {
+        return $this->with([
+            'roles' => ['ROLE_ADMIN'],
+        ]);
     }
 
     protected static function getClass(): string
