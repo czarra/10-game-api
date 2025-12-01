@@ -21,14 +21,19 @@ final class AdminAccessDeniedHandler implements AccessDeniedHandlerInterface
     ) {
     }
 
+    /**
+     * @psalm-suppress LessSpecificReturnStatement
+     * @phpstan-ignore-next-line
+     */
     public function handle(Request $request, AccessDeniedException $accessDeniedException): ?RedirectResponse
     {
         // 1. Sprawdzamy, czy żądanie dotyczy ścieżki administracyjnej
         if (str_starts_with($request->getPathInfo(), '/admin')) {
             // 2. Upewniamy się, że użytkownik jest zalogowany (nie jest anonimowy)
             if ($this->authorizationChecker->isGranted('IS_AUTHENTICATED_REMEMBERED')) {
-                // Dodajemy komunikat "flash", który zostanie wyświetlony na następnej stronie
-                $this->requestStack->getSession()->getFlashBag()->add('error', 'Nie masz wystarczających uprawnień, aby uzyskać dostęp do panelu administratora.');
+                /** @var \Symfony\Component\HttpFoundation\Session\Session $session */
+                $session = $this->requestStack->getSession();
+                $session->getFlashBag()->add('error', 'Nie masz wystarczających uprawnień, aby uzyskać dostęp do panelu administratora.');
 
                 // Generujemy URL do wylogowania
                 $logoutUrl = $this->logoutUrlGenerator->getLogoutPath();

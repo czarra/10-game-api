@@ -8,6 +8,7 @@ use Sonata\AdminBundle\Admin\AbstractAdmin;
 use Sonata\AdminBundle\Datagrid\ListMapper;
 use Sonata\AdminBundle\Datagrid\DatagridMapper;
 use Sonata\AdminBundle\Datagrid\ProxyQueryInterface;
+use Sonata\DoctrineORMAdminBundle\Datagrid\ProxyQuery;
 use Sonata\AdminBundle\Route\RouteCollectionInterface;
 
 final class UserGameAdmin extends AbstractAdmin
@@ -40,6 +41,7 @@ final class UserGameAdmin extends AbstractAdmin
 
     protected function configureQuery(ProxyQueryInterface $query): ProxyQueryInterface
     {
+        /** @var ProxyQuery $query */
         $rootAlias = $query->getRootAliases()[0];
 
         $query->andWhere($query->expr()->isNotNull($rootAlias . '.completedAt'));

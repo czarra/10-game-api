@@ -49,7 +49,6 @@ final class GamePlayServiceTest extends TestCase
 
         $this->gamePlayService = new GamePlayService(
             $this->entityManager,
-            $this->gameRepository,
             $this->userGameRepository,
             $this->gameTaskRepository,
             $this->userGameTaskRepository,

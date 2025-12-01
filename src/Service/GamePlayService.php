@@ -32,7 +32,6 @@ class GamePlayService
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly GameRepository $gameRepository,
         private readonly UserGameRepository $userGameRepository,
         private readonly GameTaskRepository $gameTaskRepository,
         private readonly UserGameTaskRepository $userGameTaskRepository,

@@ -139,7 +139,7 @@ class GameQueryService
         }
         $currentTask = null;
 
-        if (isset($gameData['currentTask']) && null !== $gameData['currentTask']) {
+        if (isset($gameData['currentTask'])) {
 
             $taskData = $gameData['currentTask'];
 

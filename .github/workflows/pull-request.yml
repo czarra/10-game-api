@@ -38,7 +38,7 @@ jobs:
           DATABASE_URL: 'sqlite:///%kernel.project_dir%/var/data.db'
 
       - name: 'Run PHPStan'
-        run: phpstan analyse src --level=5
+        run: phpstan analyse
 
   unit-tests:
     name: 'Unit Tests'

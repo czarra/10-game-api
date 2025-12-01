@@ -31,10 +31,7 @@ class TaskQueryService
         return new TaskDetailsDto(
             $task->getId()->toRfc4122(),
             $task->getName(),
-            $task->getDescription(),
-            $task->getLatitude(),
-            $task->getLongitude(),
-            $task->getAllowedDistance()
+            $task->getDescription()
         );
     }
 
@@ -52,10 +49,7 @@ class TaskQueryService
             $taskDtos[] = new TaskDetailsDto(
                 $task->getId()->toRfc4122(),
                 $task->getName(),
-                $task->getDescription(),
-                $task->getLatitude(),
-                $task->getLongitude(),
-                $task->getAllowedDistance()
+                $task->getDescription()
             );
         }
 
