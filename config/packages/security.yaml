@@ -30,6 +30,7 @@ security:
                 target: admin_login
             lazy: true
             entry_point: App\Security\AdminLoginAuthenticator
+            access_denied_handler: App\Security\AdminAccessDeniedHandler
         login:
             pattern:  ^/api/auth/login
             stateless: true

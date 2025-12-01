@@ -1,0 +1,159 @@
+name: 'Pull Request CI'
+
+on:
+  pull_request:
+    branches: [ 'main' ]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: 'Lint'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Set up PHP'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, zip, pdo, pdo_pgsql, opcache
+          tools: composer, phpstan
+
+      - name: 'Cache Composer dependencies'
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: 'Install dependencies'
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: 'Run PHPStan'
+        run: phpstan analyse src --level=5
+
+  unit-tests:
+    name: 'Unit Tests'
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Set up PHP'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, zip, pdo, pdo_pgsql, opcache
+          tools: composer
+
+      - name: 'Cache Composer dependencies'
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: 'Install dependencies'
+        run: composer install --prefer-dist --no-progress --no-suggest
+      
+      - name: Configure Unit Test Suite
+        run: |
+          sed -i '/<testsuites>/a \        <testsuite name="Unit"><directory>tests</directory><exclude>tests/Controller</exclude></testsuite>' phpunit.xml.dist
+          sed -i 's/<testsuite name="Project Test Suite">/<testsuite name="E2E"><directory>tests\/Controller<\/directory><\/testsuite>/' phpunit.xml.dist
+
+
+      - name: 'Run Unit Tests'
+        run: vendor/bin/phpunit --testsuite Unit --coverage-clover=coverage-unit.xml
+
+      - name: 'Upload coverage'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-test-coverage
+          path: coverage-unit.xml
+
+  e2e-tests:
+    name: 'E2E Tests'
+    needs: lint
+    runs-on: ubuntu-latest
+    environment: integration
+    services:
+      postgres_test:
+        image: postgres:17
+        env:
+          POSTGRES_USER: ${{ secrets.DOCKER_POSTGRES_USER_TEST }}
+          POSTGRES_PASSWORD: ${{ secrets.DOCKER_POSTGRES_PASSWORD_TEST }}
+          POSTGRES_DB: ${{ secrets.DOCKER_POSTGRES_DB_TEST }}
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Set up PHP'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, zip, pdo, pdo_pgsql, opcache
+          tools: composer
+
+      - name: 'Cache Composer dependencies'
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: 'Install dependencies'
+        run: composer install --prefer-dist --no-progress --no-suggest
+
+      - name: Configure E2E Test Suite
+        run: |
+          sed -i '/<testsuites>/a \        <testsuite name="Unit"><directory>tests</directory><exclude>tests/Controller</exclude></testsuite>' phpunit.xml.dist
+          sed -i 's/<testsuite name="Project Test Suite">/<testsuite name="E2E"><directory>tests\/Controller<\/directory><\/testsuite>/' phpunit.xml.dist
+
+      - name: 'Run Migrations'
+        run: php bin/console doctrine:migrations:migrate --no-interaction
+        env:
+          APP_ENV: test
+          DATABASE_URL: "postgresql://${{ secrets.DOCKER_POSTGRES_USER_TEST }}:${{ secrets.DOCKER_POSTGRES_PASSWORD_TEST }}@127.0.0.1:${{ job.services.postgres_test.ports[5432] }}/${{ secrets.DOCKER_POSTGRES_DB_TEST }}?serverVersion=17&charset=utf8"
+
+      - name: 'Run E2E Tests'
+        run: vendor/bin/phpunit --testsuite E2E --coverage-clover=coverage-e2e.xml
+        env:
+          APP_ENV: test
+          DATABASE_URL: "postgresql://${{ secrets.DOCKER_POSTGRES_USER_TEST }}:${{ secrets.DOCKER_POSTGRES_PASSWORD_TEST }}@127.0.0.1:${{ job.services.postgres_test.ports[5432] }}/${{ secrets.DOCKER_POSTGRES_DB_TEST }}?serverVersion=17&charset=utf8"
+
+      - name: 'Upload coverage'
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-coverage
+          path: coverage-e2e.xml
+
+  status-comment:
+    name: 'Post Status Comment'
+    needs: [unit-tests, e2e-tests]
+    runs-on: ubuntu-latest
+    if: success()
+    steps:
+      - name: 'Post comment'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          message: |
+            ### CI Report
+            - ✅ Linting: Passed
+            - ✅ Unit Tests: Passed
+            - ✅ E2E Tests: Passed
+
+            *Coverage reports are available in the artifacts.*
