@@ -125,6 +125,10 @@ jobs:
 
       - name: 'Install dependencies'
         run: composer install --prefer-dist --no-progress --no-suggest
+        env:
+          APP_ENV: test
+          DATABASE_URL: "postgresql://${{ secrets.DOCKER_POSTGRES_USER_TEST }}:${{ secrets.DOCKER_POSTGRES_PASSWORD_TEST }}@127.0.0.1:${{ job.services.postgres_test.ports[5432] }}/${{ secrets.DOCKER_POSTGRES_DB_TEST }}?serverVersion=17&charset=utf8"
+
 
       - name: 'Run Migrations'
         run: php bin/console doctrine:migrations:migrate --no-interaction
