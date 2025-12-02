@@ -5,45 +5,39 @@ declare(strict_types=1);
 namespace App\Tests\Factory;
 
 use App\Entity\User;
-use App\Repository\UserRepository;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Zenstruck\Foundry\ModelFactory;
-use Zenstruck\Foundry\Proxy;
-use Zenstruck\Foundry\RepositoryProxy;
+use Zenstruck\Foundry\Persistence\PersistentProxyObjectFactory;
 
 /**
- * @extends ModelFactory<User>
- *
- * @method        User|Proxy create(array|callable $attributes = [])
- * @method static User|Proxy createOne(array $attributes = [])
- * @method static User|Proxy find(object|array|mixed $criteria)
- * @method static User|Proxy findOrCreate(array $attributes)
- * @method static User|Proxy first(string $sortedField = 'id')
- * @method static User|Proxy last(string $sortedField = 'id')
- * @method static User|Proxy random(array $attributes = [])
- * @method static User|Proxy randomOrCreate(array $attributes = [])
- * @method static UserRepository|RepositoryProxy repository()
- * @method static User[]|Proxy[] all()
- * @method static User[]|Proxy[] createMany(int $number, array|callable $attributes = [])
- * @method static User[]|Proxy[] findBy(array $attributes)
- * @method static User[]|Proxy[] randomSet(int $number, array $attributes = [])
- * @method static User[]|Proxy[] randomRange(int $min, int $max, array $attributes = [])
+ * @extends PersistentProxyObjectFactory<User>
  */
-final class UserFactory extends ModelFactory
+final class UserFactory extends PersistentProxyObjectFactory
 {
-    protected function getDefaults(): array
+    public function __construct(private UserPasswordHasherInterface $passwordHasher)
+    {
+
+    }
+
+    public static function class(): string
+    {
+        return User::class;
+    }
+
+    protected function defaults(): array
     {
         return [
             'email' => self::faker()->email(),
             'roles' => ['ROLE_USER'],
-            'password' => 'password', // This will be hashed by withHashedPassword
+            'password' => 'password', // Wstępne hasło, zostanie nadpisane przez instrukcje w create() lub afterInstantiate
         ];
     }
 
-    public function withHashedPassword(UserPasswordHasherInterface $hasher, string $plainPassword = 'password'): self
+    // W Foundry 2.0 lepiej używać mechanizmu initialize() lub directly w defaults,
+    // ale zachowując logikę metody withHashedPassword:
+    public function withHashedPassword(string $plainPassword = 'password'): self
     {
-        return $this->afterInstantiate(function(User $user) use ($hasher, $plainPassword) {
-            $user->setPassword($hasher->hashPassword($user, $plainPassword));
+        return $this->afterInstantiate(function(User $user) use ($plainPassword) {
+            $user->setPassword($this->passwordHasher->hashPassword($user, $plainPassword));
         });
     }
 
@@ -52,10 +46,5 @@ final class UserFactory extends ModelFactory
         return $this->with([
             'roles' => ['ROLE_ADMIN'],
         ]);
-    }
-
-    protected static function getClass(): string
-    {
-        return User::class;
     }
 }

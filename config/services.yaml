@@ -28,25 +28,21 @@ services:
 
     admin.task:
         class: App\Admin\TaskAdmin
-        arguments: [~, App\Entity\Task, ~]
         tags:
             - { name: sonata.admin, manager_type: orm, group: "Game Management", label: "Tasks", model_class: App\Entity\Task }
 
     admin.gametask:
         class: App\Admin\GameTaskAdmin
-        arguments: [~, App\Entity\GameTask, ~]
         tags:
             - { name: sonata.admin, manager_type: orm, group: "Game Management", label: "Game Tasks", model_class: App\Entity\GameTask }
 
     admin.game:
         class: App\Admin\GameAdmin
-        arguments: [~, App\Entity\Game, ~]
         tags:
             - { name: sonata.admin, manager_type: orm, group: "Game Management", label: "Games", model_class: App\Entity\Game }
 
     admin.user_game_stats:
         class: App\Admin\UserGameAdmin
-        arguments: [~, App\Entity\UserGame, ~]
         tags:
             - { name: sonata.admin, manager_type: orm, group: "Statystyki", label: "Ukończone Gry", model_class: App\Entity\UserGame }
 
