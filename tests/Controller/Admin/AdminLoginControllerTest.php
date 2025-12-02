@@ -24,20 +24,14 @@ final class AdminLoginControllerTest extends WebTestCase
     {
         $this->client = static::createClient();
 
-        // Boot the kernel to access the container
-        self::bootKernel();
-        $container = static::getContainer();
-
-        /** @var UserPasswordHasherInterface $passwordHasher */
-        $passwordHasher = $container->get(UserPasswordHasherInterface::class);
-
-        UserFactory::new()
+        /** @var UserFactory $userFactory */
+        $userFactory = static::getContainer()->get(UserFactory::class);
+        $userFactory
             ->asAdmin()
-            ->withHashedPassword($passwordHasher, self::ADMIN_PASSWORD)
-            ->with([
+            ->withHashedPassword(self::ADMIN_PASSWORD)
+            ->create([
                 'email' => self::ADMIN_USERNAME,
-            ])
-            ->create();
+            ]);
     }
 
     public function testAdminLogsInSuccessfully(): void

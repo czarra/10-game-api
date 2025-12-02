@@ -2,3 +2,8 @@ services:
     # make all services public in the test environment
     _defaults:
         public: true
+        autowire: true
+        autoconfigure: true
+
+    App\Tests\Factory\:
+        resource: '../tests/Factory/'

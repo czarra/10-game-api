@@ -32,25 +32,29 @@ final class GameControllerFunctionalTest extends WebTestCase
     public function testGetCompletedGamesReturnsCorrectDataForAuthenticatedUser(): void
     {
         $client = static::createClient(['exception' => false]);
-        $user = UserFactory::createOne()->object();
+        $userFactory = static::getContainer()->get(UserFactory::class);
+        $user = $userFactory->create()->_real();
         $game = GameFactory::createOne();
 
         // Create 3 completed games for the user
-        UserGameFactory::createMany(3, [
+        $userGameFactory = static::getContainer()->get(UserGameFactory::class);
+        $userGameFactory->createMany(3, [
             'user' => $user,
             'game' => $game,
             'completedAt' => new \DateTimeImmutable(),
         ]);
         
         // Create an incomplete game that should not appear in results
-        UserGameFactory::createOne([
+        $userGameFactory = static::getContainer()->get(UserGameFactory::class);
+        $userGameFactory->createOne([
             'user' => $user,
             'game' => $game,
             'completedAt' => null,
         ]);
         
         // Create a completed game for another user that should not appear
-        UserGameFactory::createOne(['completedAt' => new \DateTimeImmutable()]);
+        $userGameFactory = static::getContainer()->get(UserGameFactory::class);
+        $userGameFactory->createOne(['completedAt' => new \DateTimeImmutable()]);
 
         $client->loginUser($user);
         $client->request('GET', '/api/games/completed');
@@ -72,10 +76,12 @@ final class GameControllerFunctionalTest extends WebTestCase
     public function testGetCompletedGamesWithCustomPagination(): void
     {
         $client = static::createClient(['exception' => false]);
-        $user = UserFactory::createOne()->object();
+        $userFactory = static::getContainer()->get(UserFactory::class);
+        $user = $userFactory->create()->_real();
         $game = GameFactory::createOne();
 
-        UserGameFactory::createMany(5, [
+        $userGameFactory = static::getContainer()->get(UserGameFactory::class);
+        $userGameFactory->createMany(5, [
             'user' => $user,
             'game' => $game,
             'completedAt' => new \DateTimeImmutable(),
@@ -98,7 +104,8 @@ final class GameControllerFunctionalTest extends WebTestCase
     public function testGetCompletedGamesReturns400ForInvalidLimit(): void
     {
         $client = static::createClient(['exception' => false]);
-        $user = UserFactory::createOne()->object();
+        $userFactory = static::getContainer()->get(UserFactory::class);
+        $user = $userFactory->create()->_real();
         
         $client->loginUser($user);
         $client->request('GET', '/api/games/completed?limit=100');

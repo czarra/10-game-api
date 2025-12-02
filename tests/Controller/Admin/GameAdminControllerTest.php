@@ -8,10 +8,14 @@ use App\Repository\GameRepository;
 use App\Tests\Factory\UserFactory;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
-use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Zenstruck\Foundry\Test\Factories;
+use Zenstruck\Foundry\Test\ResetDatabase;
 
 final class GameAdminControllerTest extends WebTestCase
 {
+    use ResetDatabase;
+    use Factories;
+    
     private KernelBrowser $client;
 
     protected function setUp(): void
@@ -19,16 +23,13 @@ final class GameAdminControllerTest extends WebTestCase
         parent::setUp();
         $this->client = static::createClient();
 
-        $container = $this->client->getContainer();
-
-        /** @var UserPasswordHasherInterface $passwordHasher */
-        $passwordHasher = $container->get(UserPasswordHasherInterface::class);
-
-        $adminUser = UserFactory::new()
+        /** @var UserFactory $userFactory */
+        $userFactory = static::getContainer()->get(UserFactory::class);
+        $adminUser = $userFactory
             ->asAdmin()
-            ->withHashedPassword($passwordHasher, 'password')
+            ->withHashedPassword('password')
             ->create(['email' => 'admin-game-test@example.com'])
-            ->object();
+            ->_real();
 
         $this->client->loginUser($adminUser, 'admin');
     }
