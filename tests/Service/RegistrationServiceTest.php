@@ -10,14 +10,15 @@ use App\Repository\UserRepository;
 use App\Service\Exception\EmailAlreadyExistsException;
 use App\Service\RegistrationService;
 use Doctrine\ORM\EntityManagerInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 final class RegistrationServiceTest extends TestCase
 {
-    private UserRepository $userRepository;
-    private UserPasswordHasherInterface $passwordHasher;
-    private EntityManagerInterface $entityManager;
+    private UserRepository|MockObject $userRepository;
+    private UserPasswordHasherInterface|MockObject $passwordHasher;
+    private EntityManagerInterface|MockObject $entityManager;
     private RegistrationService $registrationService;
 
     protected function setUp(): void

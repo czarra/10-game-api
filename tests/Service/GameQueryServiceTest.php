@@ -21,6 +21,7 @@ use App\Service\GameQueryService;
 use DateTimeImmutable;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Tools\Pagination\Paginator;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
@@ -29,9 +30,9 @@ use Symfony\Component\Uid\Uuid;
 
 final class GameQueryServiceTest extends TestCase
 {
-    private GameRepository $gameRepository;
-    private UserGameRepository $userGameRepository;
-    private LoggerInterface $logger;
+    private GameRepository|MockObject $gameRepository;
+    private UserGameRepository|MockObject $userGameRepository;
+    private LoggerInterface|MockObject $logger;
     private GameQueryService $gameQueryService;
 
     protected function setUp(): void

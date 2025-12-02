@@ -12,6 +12,7 @@ use App\Repository\GameTaskRepository;
 use App\Service\GamePlayService;
 use App\Service\GameQueryService;
 use App\Validator\UuidValidator;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\DependencyInjection\Container;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -25,9 +26,9 @@ use Webmozart\Assert\Assert;
 final class GameControllerTest extends TestCase
 {
     private GameController $controller;
-    private GameQueryService $gameQueryService;
-    private GamePlayService $gamePlayService;
-    private UuidValidator $uuidValidator;
+    private GameQueryService|MockObject $gameQueryService;
+    private GamePlayService|MockObject $gamePlayService;
+    private UuidValidator|MockObject $uuidValidator;
 
     protected function setUp(): void
     {
@@ -81,24 +82,5 @@ final class GameControllerTest extends TestCase
     public function testStartGameSuccess(): void
     {
         $this->markTestSkipped('This test requires more complex mocking of the controller dependencies to be fully functional.');
-        $game = $this->createMock(Game::class);
-        $user = $this->createMock(User::class);
-        $userGame = $this->createMock(UserGame::class);
-
-        $this->gamePlayService->method('startGameForUser')->willReturn($userGame);
-
-        // Mocking the container to handle getUser()
-        $token = $this->createMock(TokenInterface::class);
-        $token->method('getUser')->willReturn($user);
-        $tokenStorage = $this->createMock(TokenStorageInterface::class);
-        $tokenStorage->method('getToken')->willReturn($token);
-
-        $container = new Container();
-        $container->set('security.token_storage', $tokenStorage);
-        $this->controller->setContainer($container);
-
-        // This test is incomplete as startGame has further dependencies.
-        // It demonstrates the initial setup for a controller test.
-        $this->markTestIncomplete('This test requires more complex mocking of the controller dependencies to be fully functional.');
     }
 }

@@ -14,6 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Gesdinet\JWTRefreshTokenBundle\Generator\RefreshTokenGeneratorInterface;
 use Gesdinet\JWTRefreshTokenBundle\Model\RefreshTokenManagerInterface;
 use Lexik\Bundle\JWTAuthenticationBundle\Services\JWTTokenManagerInterface;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
 use App\Controller\AuthController;
@@ -23,12 +24,12 @@ use Symfony\Component\HttpFoundation\Response;
 final class AuthControllerTest extends TestCase
 {
     private AuthController $controller;
-    private EntityManagerInterface $entityManager;
-    private UserTokenRepository $userTokenRepository;
-    private RegistrationService $registrationService;
-    private JWTTokenManagerInterface $jwtManager;
-    private RefreshTokenManagerInterface $refreshTokenManager; // Keep for save() mock
-    private RefreshTokenGeneratorInterface $refreshTokenGenerator; // New for create() mock
+    private EntityManagerInterface|MockObject $entityManager;
+    private UserTokenRepository|MockObject $userTokenRepository;
+    private RegistrationService|MockObject $registrationService;
+    private JWTTokenManagerInterface|MockObject $jwtManager;
+    private RefreshTokenManagerInterface|MockObject $refreshTokenManager; // Keep for save() mock
+    private RefreshTokenGeneratorInterface|MockObject $refreshTokenGenerator; // New for create() mock
 
     protected function setUp(): void
     {

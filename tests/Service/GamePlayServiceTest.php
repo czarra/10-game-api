@@ -32,7 +32,6 @@ final class GamePlayServiceTest extends TestCase
 {
     private GamePlayService $gamePlayService;
     private MockObject|EntityManagerInterface $entityManager;
-    private MockObject|GameRepository $gameRepository;
     private MockObject|UserGameRepository $userGameRepository;
     private MockObject|GameTaskRepository $gameTaskRepository;
     private MockObject|UserGameTaskRepository $userGameTaskRepository;
@@ -41,7 +40,6 @@ final class GamePlayServiceTest extends TestCase
     protected function setUp(): void
     {
         $this->entityManager = $this->createMock(EntityManagerInterface::class);
-        $this->gameRepository = $this->createMock(GameRepository::class);
         $this->userGameRepository = $this->createMock(UserGameRepository::class);
         $this->gameTaskRepository = $this->createMock(GameTaskRepository::class);
         $this->userGameTaskRepository = $this->createMock(UserGameTaskRepository::class);

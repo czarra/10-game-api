@@ -21,10 +21,6 @@ final class AdminAccessDeniedHandler implements AccessDeniedHandlerInterface
     ) {
     }
 
-    /**
-     * @psalm-suppress LessSpecificReturnStatement
-     * @phpstan-ignore-next-line
-     */
     public function handle(Request $request, AccessDeniedException $accessDeniedException): ?RedirectResponse
     {
         // 1. Sprawdzamy, czy żądanie dotyczy ścieżki administracyjnej

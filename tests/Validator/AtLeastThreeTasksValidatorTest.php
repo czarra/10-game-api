@@ -7,6 +7,7 @@ namespace App\Tests\Validator;
 use App\Entity\Game;
 use App\Validator\AtLeastThreeTasks;
 use App\Validator\AtLeastThreeTasksValidator;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
@@ -14,7 +15,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 
 final class AtLeastThreeTasksValidatorTest extends TestCase
 {
-    private ExecutionContextInterface $context;
+    private ExecutionContextInterface|MockObject $context;
     private AtLeastThreeTasksValidator $validator;
 
     protected function setUp(): void

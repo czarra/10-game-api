@@ -7,14 +7,15 @@ namespace App\Tests\Entity;
 use App\Entity\Game;
 use App\Entity\GameTask;
 use App\Entity\Task;
+use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Uid\Uuid;
-use Symfony\Component\Validator\ConstraintViolationBuilderInterface;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
+use Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface;
 
 final class GameTest extends TestCase
 {
-    private ExecutionContextInterface $context;
+    private ExecutionContextInterface|MockObject $context;
 
     protected function setUp(): void
     {
@@ -39,7 +40,7 @@ final class GameTest extends TestCase
         $game->addGameTask($this->createGameTask(1, new Task()));
         $game->addGameTask($this->createGameTask(1, new Task())); // Duplicate sequence
 
-        $violationBuilder = $this->createMock(\Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface::class);
+        $violationBuilder = $this->createMock(ConstraintViolationBuilderInterface::class);
         $violationBuilder->method('atPath')->willReturn($violationBuilder);
         $violationBuilder->method('setParameter')->willReturn($violationBuilder);
         $violationBuilder->method('addViolation');
@@ -60,7 +61,7 @@ final class GameTest extends TestCase
         $game->addGameTask($this->createGameTask(1, $task));
         $game->addGameTask($this->createGameTask(2, $task)); // Duplicate task
 
-        $violationBuilder = $this->createMock(\Symfony\Component\Validator\Violation\ConstraintViolationBuilderInterface::class);
+        $violationBuilder = $this->createMock(ConstraintViolationBuilderInterface::class);
         $violationBuilder->method('atPath')->willReturn($violationBuilder);
         $violationBuilder->method('setParameter')->willReturn($violationBuilder);
         $violationBuilder->method('addViolation');
