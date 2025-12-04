@@ -48,46 +48,39 @@ To set up and run the project on your local machine, follow these steps.
 
 ### Prerequisites
 
-- Docker and Docker Compose installed.
+- Docker and docker compose installed.
 - A `.env` file created in the project root.
 
-### Installation
+### Installation using the Development Script
 
-1.  **Create Environment File:**
-    It is recommended to create a `.env` file in the project root. You can copy an existing `.env.dist` file if available.
-    ```bash
-    cp .env.dist .env
-    ```
-    Update the variables in the `.env` file with your local configuration, especially the database credentials (`DOCKER_POSTGRES_USER`, `DOCKER_POSTGRES_PASSWORD`, `DOCKER_POSTGRES_DB`).
+The easiest way to get the project running is to use the automated development script.
 
-2.  **Build and Start Containers:**
-    Use Docker Compose to build the images and start the services in the background.
+1.  **Create Environment Files:**
+    The application requires separate environment files for development and testing. You can create them by copying the distribution file:
     ```bash
-    docker-compose up -d --build
+    cp .env.dist .env.dev
     ```
+    Ensure the variables in these files are correctly set for your local environment, especially the database credentials. The script relies on `.env.dev` for the main application and `.env.test` for the test suite database.
 
-3.  **Install Dependencies:**
-    Access the PHP container and install the Composer dependencies.
+2.  **Run the Development Script:**
+    Execute the `run-dev.sh` script. It will handle everything: cleaning the environment, starting Docker containers, installing dependencies, and setting up both development and test databases.
     ```bash
-    docker-compose exec php composer install
-    ```
-
-4.  **Database Setup:**
-    Run the database migrations to set up the required tables.
-    ```bash
-    docker-compose exec php bin/console doctrine:migrations:migrate
-    ```
-5.  **Fixtures load:**
-    Create an initial admin and user.
-    ```bash
-    docker-compose exec php bin/console doctrine:fixtures:load --no-interaction 
+    ./run-dev.sh
     ```
 
 The application should now be running. You can access it at `http://localhost:8282`.
 
+## Running Tests
+
+To run the full test suite (PHPUnit), use the following command. This will execute the tests inside the PHP container against the test database.
+
+```bash
+docker compose exec php bin/phpunit
+```
+
 ## Available Scripts
 
-The following scripts are available via Composer and can be run from within the `php` container (e.g., `docker-compose exec php composer <script-name>`):
+The following scripts are available via Composer and can be run from within the `php` container (e.g., `docker compose exec php composer <script-name>`):
 
 -   `post-install-cmd`: Runs automatically after `composer install`. It executes the `auto-scripts`.
 -   `post-update-cmd`: Runs automatically after `composer update`. It executes the `auto-scripts`.
