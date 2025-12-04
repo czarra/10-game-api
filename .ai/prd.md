@@ -81,7 +81,7 @@ Opis: Jako administrator, chcę móc przeglądać czasy ukończenia gier przez p
 Kryteria akceptacji:
 - Lista zawiera: nazwę użytkownika, nazwę gry, czas ukończenia, datę ukończenia
 - Możliwość filtrowania według gry i zakresu dat
-- Możliwość sortowania według czasu ukończenia
+- Domyślne sortowania według czasu ukończenia (od najkrótszego)
 - Brak możliwości edycji ani usuwania wyników
 - Paginacja wyników (domyślnie 10 na stronę)
 

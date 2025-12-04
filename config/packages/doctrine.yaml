@@ -18,6 +18,8 @@ doctrine:
         dql:
             datetime_functions:
                 EXTRACT: App\DQL\ExtractFunction
+            numeric_functions:
+                TIMESTAMPDIFF: App\DQL\TimestampDiff
         mappings:
             App:
                 type: attribute

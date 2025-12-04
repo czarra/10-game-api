@@ -26,9 +26,9 @@ final class UserGameAdmin extends AbstractAdmin
                 'label' => 'Data ukończenia',
                 'format' => 'Y-m-d H:i:s'
             ])
-            ->add('duration', 'string', [
+            ->add('durationSeconds', 'string', [
                 'label' => 'Czas trwania',
-                'template' => 'admin/list/list_duration.html.twig'
+                'template' => 'admin/list/list_duration.html.twig',
             ]);
     }
 
@@ -44,11 +44,13 @@ final class UserGameAdmin extends AbstractAdmin
         /** @var ProxyQuery $query */
         $rootAlias = $query->getRootAliases()[0];
 
-        $query->andWhere($query->expr()->isNotNull($rootAlias . '.completedAt'));
-        
-        // Opcjonalne dołączenie, jeśli Sonata nie robi tego automatycznie
-        $query->leftJoin($rootAlias . '.game', 'g');
-        $query->leftJoin($rootAlias . '.user', 'u');
+        $query
+            ->addSelect("TIMESTAMPDIFF(SECOND, {$rootAlias}.startedAt, {$rootAlias}.completedAt) as durationSeconds")
+            ->andWhere($query->expr()->isNotNull($rootAlias . '.completedAt'))
+            ->leftJoin($rootAlias . '.game', 'g')
+            ->leftJoin($rootAlias . '.user', 'u')
+            ->orderBy('durationSeconds', 'ASC');
+
         return $query;
     }
 

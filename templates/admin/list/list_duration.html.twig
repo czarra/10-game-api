@@ -2,8 +2,12 @@
 {% extends '@SonataAdmin/CRUD/base_list_field.html.twig' %}
 
 {% block field_value %}
-    {% if object.completedAt and object.startedAt %}
-        {{ object.completedAt.diff(object.startedAt).format('%H:%I:%S') }}
+    {% if value is not null and value > 0 %}
+        {% set seconds = value %}
+        {% set hours = (seconds / 3600)|round(0, 'floor') %}
+        {% set minutes = ((seconds % 3600) / 60)|round(0, 'floor') %}
+        {% set remaining_seconds = seconds % 60 %}
+        {{ '%02d:%02d:%02d'|format(hours, minutes, remaining_seconds) }}
     {% else %}
         N/A
     {% endif %}

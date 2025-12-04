@@ -1,14 +1,14 @@
-# Implementation Plan: Admin Panel - Game Completion Statistics (US-005)
+# Implementation Plan: Admin Panel - Game Completion Statistics (US-005) - v2.1 (final)
 
-## 1. Instalacja wymaganych paczek
+## 1. Wymagane Pakiety
 
 Pomiń krok 1, ponieważ Sonata Admin Bundle został już zainstalowany.
 
-## 2. Przegląd punktu końcowego
+## 2. Przegląd Funkcjonalności
 
-Celem jest stworzenie nowej sekcji w panelu administratora Sonata, która będzie wyświetlać statystyki ukończonych gier. Będzie to widok listy (read-only) oparty na encji `UserGame`. Administrator będzie mógł przeglądać, filtrować i sortować listę gier ukończonych przez użytkowników wraz z czasem, jaki im to zajęło. Nie będzie możliwości edycji ani usuwania tych rekordów z tego poziomu.
+Celem jest stworzenie nowej sekcji w panelu administratora Sonata, która będzie wyświetlać statystyki ukończonych gier. Będzie to widok listy (read-only) oparty na encji `UserGame`. Administrator będzie mógł przeglądać, filtrować i sortować listę gier ukończonych przez użytkowników, **lista jest domyślnie sortowana według czasu trwania gry (od najkrótszego)**. Nie będzie możliwości edycji ani usuwania tych rekordów z tego poziomu.
 
-## 3. Szczegóły żądania
+## 3. Szczegóły Techniczne
 
 - **Metoda HTTP:** `GET`
 - **Struktura URL:** `/admin/app/usergame/list` (standardowy URL generowany przez Sonata Admin)
@@ -16,170 +16,148 @@ Celem jest stworzenie nowej sekcji w panelu administratora Sonata, która będzi
   - **Filtrowanie (opcjonalne):**
     - `filter[game][value]`: ID gry
     - `filter[user][value]`: ID użytkownika
-    - `filter[completedAt][value]`: Zakres dat ukończenia
   - **Sortowanie (opcjonalne):**
-    - `sort_by`: Nazwa pola do sortowania (np. `game.name`, `user.email`, `duration`)
+    - `sort_by`: Nazwa pola do sortowania (np. `game.name`, `user.email`)
     - `sort_order`: `ASC` lub `DESC`
-  - **Paginacja (opcjonalne):**
-    - `page`: Numer strony
 
-## 4. Szczegóły odpowiedzi
+## 4. Szczegóły Odpowiedzi
 
 - **Typ odpowiedzi:** `text/html`
-- **Opis:** Wyrenderowana strona HTML zawierająca tabelę z listą ukończonych gier. Tabela będzie zawierać następujące kolumny:
-  - **Nazwa Gry:** Nazwa ukończonej gry (z encji `Game`).
-  - **Użytkownik:** Adres email użytkownika, który ukończył grę (z encji `User`).
-  - **Data rozpoczęcia:** `started_at` z encji `UserGame`.
-  - **Data ukończenia:** `completed_at` z encji `UserGame`.
-  - **Czas trwania:** Obliczona różnica między `completed_at` a `started_at`, sformatowana jako `HH:MM:SS`.
+- **Opis:** Wyrenderowana strona HTML z tabelą. Kolumny:
+  - Nazwa Gry
+  - Użytkownik (email)
+  - Data rozpoczęcia
+  - Data ukończenia
+  - **Czas trwania:** Obliczona różnica między `completed_at` a `started_at`, sformatowana jako `GG:MM:SS`.
 
-## 5. Przepływ danych
+## 5. Przepływ Danych
 
-1.  Administrator loguje się do panelu i przechodzi do sekcji "Statystyki Gier".
+1.  Administrator wchodzi do sekcji "Statystyki Gier".
 2.  Sonata Admin wywołuje klasę `App\Admin\UserGameAdmin`.
-3.  Metoda `createQuery()` w `UserGameAdmin` jest wykonywana w celu zbudowania niestandardowego zapytania DQL.
-4.  Zapytanie DQL:
+3.  Metoda `configureQuery()` w `UserGameAdmin` modyfikuje zapytanie DQL.
+4.  **Zapytanie DQL:**
     - Wybiera dane z encji `UserGame` (alias `o`).
-    - Dołącza (`LEFT JOIN`) encję `Game` (alias `g`) i `User` (alias `u`).
-    - Filtruje wyniki, aby pokazać tylko te, gdzie `o.completed_at IS NOT NULL`.
-    - Dodaje do selekcji obliczeniową kolumnę `duration` (np. przy użyciu `AGE(o.completed_at, o.started_at)` jeśli baza to wspiera lub przez pobranie obu dat).
+    - Dołącza (`LEFT JOIN`) encje `Game` (`g`) i `User` (`u`).
+    - Filtruje wyniki (`o.completedAt IS NOT NULL`).
+    - **Dodaje do selekcji obliczeniową kolumnę `durationSeconds` przy użyciu niestandardowej funkcji DQL `TIMESTAMPDIFF`, która oblicza różnicę czasu w sekundach.**
+    - **Zawiera domyślną klauzulę ORDER BY `durationSeconds` ASC.**
 5.  Doctrine wykonuje zapytanie w bazie danych PostgreSQL.
 6.  Sonata Admin pobiera wyniki, stosuje paginację i przekazuje je do szablonu Twig.
-7.  Szablon renderuje tabelę HTML z danymi i kontrolkami do filtrowania, sortowania i paginacji.
+7.  Szablon renderuje tabelę. Kolumna "Czas trwania" otrzymuje gotową wartość w sekundach i jedynie ją formatuje.
 
-## 6. Względy bezpieczeństwa
+## 6. Bezpieczeństwo
 
-- **Uwierzytelnianie i Autoryzacja:** Dostęp do całej ścieżki `/admin` musi być ograniczony do użytkowników z rolą `ROLE_ADMIN`. Należy to skonfigurować w pliku `config/packages/security.yaml`.
+- Dostęp ograniczony do `ROLE_ADMIN` poprzez `config/packages/security.yaml`.
+- Ochrona CSRF zapewniona przez Sonata Admin.
+
+## 7. Rozważania Wydajnościowe
+
+- **Indeksowanie:** Kolumny `user_id`, `game_id` i `completed_at` w tabeli `user_games` powinny być zaindeksowane.
+- **Paginacja:** Domyślnie włączona w Sonata.
+- **Zapytanie:** Użycie `LEFT JOIN` i selektywne wybieranie pól jest kluczowe. Obliczenia w DQL są wydajniejsze niż w PHP dla dużych zbiorów danych.
+
+## 8. Etapy Wdrożenia
+
+### 8.1. Utworzenie niestandardowej funkcji DQL `TIMESTAMPDIFF`
+
+- Stwórz plik `src/DQL/TimestampDiff.php`.
+- Klasa będzie rozszerzać `Doctrine\ORM\Query\AST\Functions\FunctionNode` i implementować logikę dla funkcji `TIMESTAMPDIFF(unit, start, end)`.
+
+### 8.2. Rejestracja funkcji DQL w Doctrine
+
+- W pliku `config/packages/doctrine.yaml` zarejestruj nową funkcję, aby Doctrine mógł jej używać.
+
+```yaml
+# config/packages/doctrine.yaml
+doctrine:
+    orm:
+        # ...
+        dql:
+            numeric_functions:
+                # ...
+                TIMESTAMPDIFF: App\DQL\TimestampDiff
+```
+
+### 8.3. Aktualizacja `UserGameAdmin`
+
+- **Rejestracja jako serwis:** Ze względu na brak wsparcia dla atrybutu `#[AsAdmin]` w bieżącej wersji SonataAdminBundle, serwis `UserGameAdmin` musi zostać zarejestrowany w pliku `config/services.yaml`. Należy użyć ID serwisu `admin.user_game_stats`, aby zachować spójność z konfiguracją dashboardu Sonaty.
 
   ```yaml
-  # config/packages/security.yaml
-  access_control:
-      - { path: ^/admin, roles: ROLE_ADMIN }
+  # config/services.yaml
+  services:
+      # ...
+      admin.user_game_stats:
+          class: App\Admin\UserGameAdmin
+          tags:
+              - { name: sonata.admin, manager_type: orm, group: "Statystyki", label: "Ukończone Gry", model_class: App\Entity\UserGame }
   ```
-- **CSRF:** Sonata Admin domyślnie zapewnia ochronę przed atakami CSRF dla wszystkich formularzy, co jest dodatkowym zabezpieczeniem.
 
-## 7. Obsługa błędów
+- **Konfiguracja pól listy (`configureListFields`):**
+  - Zmodyfikuj pole `duration`, aby było sortowalne. Wskaż, że sortowanie ma się odbywać na obliczonym przez DQL polu `durationSeconds`.
 
-- **403 Forbidden:** Jeśli użytkownik bez roli `ROLE_ADMIN` spróbuje uzyskać dostęp, Symfony zwróci stronę błędu 403.
-- **500 Internal Server Error:** W przypadku błędu zapytania do bazy danych lub innego błędu po stronie serwera, Symfony wyświetli standardową stronę błędu 500. Wszystkie wyjątki będą logowane przez Monolog.
+  ```php
+  // src/Admin/UserGameAdmin.php
+  protected function configureListFields(ListMapper $list): void
+  {
+      // ...
+      $list->add('duration', 'string', [
+          'label' => 'Czas trwania',
+          'template' => 'admin/list/list_duration.html.twig',
+      ]);
+  }
+  ```
 
-## 8. Rozważania dotyczące wydajności
+- **Modyfikacja zapytania (`configureQuery`):**
+  - Zmodyfikuj metodę, aby dodawała do zapytania obliczoną kolumnę.
 
-- **Indeksowanie:** Aby zapewnić szybkie działanie filtrów i sortowania, należy upewnić się, że kolumny `user_id`, `game_id` i `completed_at` w tabeli `user_games` są zaindeksowane. Zgodnie z planem bazy danych, klucze obce są już indeksowane. Warto dodać indeks na `completed_at`.
-- **Paginacja:** Sonata Admin domyślnie paginuje wyniki, co zapobiega problemom z wydajnością przy dużej liczbie rekordów.
-- **Zapytanie:** Zapytanie DQL powinno być zoptymalizowane, aby unikać pobierania niepotrzebnych danych. Należy używać `LEFT JOIN` i selektywnie wybierać pola.
+  ```php
+  // src/Admin/UserGameAdmin.php
+  protected function configureQuery(ProxyQueryInterface $query): ProxyQueryInterface
+  {
+      /** @var ProxyQuery $query */
+      $rootAlias = $query->getRootAliases()[0];
 
-## 9. Etapy wdrożenia
+      $query
+          ->addSelect("TIMESTAMPDIFF(SECOND, {$rootAlias}.startedAt, {$rootAlias}.completedAt) as HIDDEN durationSeconds")
+          ->andWhere($query->expr()->isNotNull($rootAlias . '.completedAt'))
+          ->leftJoin($rootAlias . '.game', 'g')
+          ->leftJoin($rootAlias . '.user', 'u')
+          ->orderBy('durationSeconds', 'ASC');
 
-1.  **Utworzenie klasy Admin:**
-    - Stwórz nowy plik `src/Admin/UserGameAdmin.php`.
-    - Klasa `UserGameAdmin` powinna dziedziczyć po `Sonata\AdminBundle\Admin\AbstractAdmin`.
+      return $query;
+  }
+  ```
 
-2.  **Rejestracja serwisu Admin:**
-    - Zarejestruj `UserGameAdmin` jako serwis w `config/services.yaml` i oznacz go tagiem `sonata.admin`.
+### 8.4. Aktualizacja szablonu dla czasu trwania
 
-    ```yaml
-    # config/services.yaml
-    services:
-        # ...
-        App\Admin\UserGameAdmin:
-            class: App\Admin\UserGameAdmin
-            arguments: [~, App\Entity\UserGame, ~]
-            tags:
-                - { name: sonata.admin, manager_type: orm, group: "Statystyki", label: "Ukończone Gry" }
-    ```
+- Zmodyfikuj plik `templates/admin/list/list_duration.html.twig`.
+- Szablon nie będzie już obliczał różnicy. Zamiast tego, otrzyma z `object.duration` wartość w sekundach (dzięki `sort_field_mapping`), którą sformatuje.
 
-3.  **Konfiguracja pól listy (`configureListFields`):**
-    - W `UserGameAdmin.php` zaimplementuj metodę `configureListFields`, aby zdefiniować kolumny.
-    - Dla pola `duration` użyj niestandardowego szablonu do obliczenia i sformatowania różnicy czasu.
+```twig
+{# templates/admin/list/list_duration.html.twig #}
+{% extends '@SonataAdmin/CRUD/base_list_field.html.twig' %}
 
-    ```php
-    // src/Admin/UserGameAdmin.php
-    protected function configureListFields(ListMapper $list): void
-    {
-        $list
-            ->add('game.name', null, ['label' => 'Nazwa Gry'])
-            ->add('user.email', null, ['label' => 'Użytkownik'])
-            ->add('startedAt', null, [
-                'label' => 'Data rozpoczęcia',
-                'format' => 'Y-m-d H:i:s'
-            ])
-            ->add('completedAt', null, [
-                'label' => 'Data ukończenia',
-                'format' => 'Y-m-d H:i:s'
-            ])
-            ->add('duration', 'string', [
-                'label' => 'Czas trwania',
-                'template' => 'admin/list/list_duration.html.twig'
-            ]);
-    }
-    ```
+{% block field_value %}
+    {% if value is not null %}
+        {% set seconds = value %}
+        {% set hours = (seconds / 3600)|round(0, 'floor') %}
+        {% set minutes = ((seconds % 3600) / 60)|round(0, 'floor') %}
+        {% set remaining_seconds = seconds % 60 %}
+        {{ '%02d:%02d:%02d'|format(hours, minutes, remaining_seconds) }}
+    {% else %}
+        N/A
+    {% endif %}
+{% endblock %}
+```
 
-4.  **Stworzenie szablonu dla czasu trwania:**
-    - Utwórz plik `templates/admin/list/list_duration.html.twig`.
-    - W szablonie oblicz różnicę między `object.completedAt` a `object.startedAt`.
+### 8.5. Usunięcie niepotrzebnych akcji
 
-    ```twig
-    {# templates/admin/list/list_duration.html.twig #}
-    {% extends '@SonataAdmin/CRUD/base_list_field.html.twig' %}
+- Upewnij się, że metoda `configureRoutes` usuwa akcje `create`, `edit`, `delete` i `export`.
 
-    {% block field_value %}
-        {% if object.completedAt and object.startedAt %}
-            {{ object.completedAt.diff(object.startedAt).format('%H:%I:%S') }}
-        {% else %}
-            N/A
-        {% endif %}
-    {% endblock %}
-    ```
+### 8.6. Weryfikacja
 
-5.  **Konfiguracja filtrów (`configureDatagridFilters`):**
-    - W `UserGameAdmin.php` zaimplementuj metodę `configureDatagridFilters`.
-
-    ```php
-    // src/Admin/UserGameAdmin.php
-    protected function configureDatagridFilters(DatagridMapper $datagrid): void
-    {
-        $datagrid
-            ->add('game', null, ['label' => 'Gra'])
-            ->add('user', null, ['label' => 'Użytkownik']);
-    }
-    ```
-
-6.  **Modyfikacja zapytania (`createQuery`):**
-    - W `UserGameAdmin.php` nadpisz metodę `createQuery`, aby filtrować tylko ukończone gry i dodać aliasy.
-
-    ```php
-    // src/Admin/UserGameAdmin.php
-    public function createQuery(string $context = 'list'): ProxyQueryInterface
-    {
-        $query = parent::createQuery($context);
-        $rootAlias = $query->getRootAliases()[0];
-
-        $query->andWhere($query->expr()->isNotNull($rootAlias . '.completedAt'));
-        
-        // Opcjonalne dołączenie, jeśli Sonata nie robi tego automatycznie
-        $query->leftJoin($rootAlias . '.game', 'g');
-        $query->leftJoin($rootAlias . '.user', 'u');
-
-        return $query;
-    }
-    ```
-
-7.  **Usunięcie niepotrzebnych akcji:**
-    - Ponieważ ma to być widok tylko do odczytu, usuń akcje tworzenia, edycji i usuwania.
-
-    ```php
-    // src/Admin/UserGameAdmin.php
-    protected function configureRoutes(RouteCollectionInterface $collection): void
-    {
-        $collection->remove('create');
-        $collection->remove('edit');
-        $collection->remove('delete');
-        $collection->remove('export');
-    }
-    ```
-
-8.  **Weryfikacja:**
-    - Uruchom aplikację, zaloguj się jako administrator i przejdź do nowej sekcji w panelu.
-    - Sprawdź, czy wyświetlane są tylko ukończone gry, czy działają filtry i sortowanie (szczególnie po kolumnach z relacji).
-    - Upewnij się, że użytkownik z inną rolą (np. `ROLE_USER`) nie ma dostępu do panelu admina.
+- Uruchom aplikację i jako administrator przejdź do nowej sekcji.
+- Sprawdź, czy wyświetlane są tylko ukończone gry.
+- **Sprawdź, czy lista jest domyślnie posortowana rosnąco według czasu trwania.**
+- Sprawdź działanie filtrów.
+- Upewnij się, że użytkownik z inną rolą nie ma dostępu do panelu admina.
