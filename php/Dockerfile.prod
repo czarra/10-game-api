@@ -1,0 +1,41 @@
+# php/Dockerfile.prod
+# Dockerfile for the production environment.
+# This image is self-contained and includes the application code and production dependencies.
+
+FROM php:8.3-fpm
+
+# 1. Install system dependencies required by PHP extensions
+# Added libpng-dev for the 'gd' extension.
+RUN apt update \
+    && apt install -y zlib1g-dev g++ git libicu-dev zip libzip-dev zip unzip libpq-dev libpng-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# 2. Install required PHP extensions for the project
+RUN docker-php-ext-install intl opcache pdo pdo_pgsql gd zip \
+    && pecl install apcu \
+    && docker-php-ext-enable apcu
+
+# 3. Install Composer
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+# 4. Set workdir
+WORKDIR /var/www/10_game
+
+# Define build-time argument and set it as an environment variable
+ARG APP_ENV=prod
+ENV APP_ENV=${APP_ENV}
+
+# 5. Install production Composer dependencies
+# This is done in a separate step to leverage Docker layer caching.
+COPY composer.json composer.lock ./
+RUN composer install --prefer-dist --no-progress --no-suggest --no-dev --optimize-autoloader --no-scripts
+
+# 6. Copy the rest of the application source code into the image
+COPY . .
+
+# 7. Run composer post-install scripts now that all files are present
+RUN composer run-script post-install-cmd
+
+# 8. Set correct permissions for the web server user for the 'var' directory
+RUN chown -R www-data:www-data var

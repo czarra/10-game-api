@@ -1,0 +1,132 @@
+# .github/workflows/master-docker.yml
+name: 'Build, Push and Deploy to Production'
+
+on:
+  workflow_dispatch:
+
+jobs:
+  lint:
+    name: 'Lint'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Set up PHP'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, zip, pdo, pdo_pgsql, opcache
+          tools: composer, phpstan
+
+      - name: 'Cache Composer dependencies'
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: 'Install dependencies'
+        run: composer install --prefer-dist --no-progress --no-suggest
+        env:
+          APP_ENV: test
+          DATABASE_URL: 'sqlite:///%kernel.project_dir%/var/data.db'
+
+      - name: 'Run PHPStan'
+        run: phpstan analyse
+
+  unit-tests:
+    name: 'Unit Tests'
+    needs: lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Set up PHP'
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: gd, zip, pdo, pdo_pgsql, opcache
+          tools: composer
+
+      - name: 'Cache Composer dependencies'
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-composer-
+
+      - name: 'Install dependencies'
+        run: composer install --prefer-dist --no-progress --no-suggest
+        env:
+          APP_ENV: test
+          DATABASE_URL: 'sqlite:///%kernel.project_dir%/var/data.db'
+
+      - name: 'Run Unit Tests'
+        run: vendor/bin/phpunit --testsuite Unit
+
+  build-and-push:
+    name: 'Build and Push Docker Image'
+    needs: unit-tests
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Log in to GitHub Container Registry'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 'Extract metadata (tags, labels) for Docker'
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/czarra/10-game-api
+          tags: |
+            type=sha,prefix=,format=short
+
+      - name: 'Build and push Docker image'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./php/Dockerfile.prod
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            APP_ENV=prod
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-to-railway:
+    name: 'Deploy to Railway'
+    needs: [build-and-push]
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: 'Deploy to Railway'
+        uses: railwayapp/cli-action@v2
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          railway_service: ${{ secrets.RAILWAY_SERVICE_ID }}
+          image: ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}
+
+      - name: 'Run Migrations'
+        uses: railwayapp/cli-action@v2
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+          railway_service: ${{ secrets.RAILWAY_SERVICE_ID }}
+          args: run -- php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
