@@ -31,15 +31,15 @@
 
 1.  **Build and start containers**:
     ```bash
-    docker-compose up -d --build
+    docker compose up -d --build
     ```
 2.  **Install dependencies**:
     ```bash
-    docker-compose exec php composer install
+    docker compose exec php composer install
     ```
 3.  **Run database migrations**:
     ```bash
-    docker-compose exec php bin/console doctrine:migrations:migrate
+    docker compose exec php bin/console doctrine:migrations:migrate
     ```
 
 ## Code Style
