@@ -59,6 +59,7 @@ The easiest way to get the project running is to use the automated development s
     The application requires separate environment files for development and testing. You can create them by copying the distribution file:
     ```bash
     cp .env.dist .env.dev
+    cp .env.test.pipeline .env.test
     ```
     Ensure the variables in these files are correctly set for your local environment, especially the database credentials. The script relies on `.env.dev` for the main application and `.env.test` for the test suite database.
 
