@@ -106,9 +106,6 @@ jobs:
           extensions: gd, zip, pdo, pdo_pgsql, opcache
           tools: composer
 
-      - name: 'Create .env.test file'
-        run: cp .env.test.pipeline .env.test
-
       - name: 'Cache Composer dependencies'
         uses: actions/cache@v4
         with:
