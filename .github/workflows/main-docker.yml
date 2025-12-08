@@ -120,8 +120,13 @@ jobs:
       - name: 'Install Railway CLI'
         run: curl -fsSL https://railway.app/install.sh | sh
 
+      - name: 'Link to Railway Service'
+        run: railway link ${{ secrets.RAILWAY_SERVICE_ID }}
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
       - name: 'Deploy Image to Railway'
-        run: railway deploy --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production --image ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }} --detach
+        run: railway deploy --image ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }} --environment production --detach
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
