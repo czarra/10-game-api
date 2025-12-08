@@ -122,29 +122,29 @@ jobs:
       - name: 'Install Railway CLI'
         run: curl -fsSL https://railway.app/install.sh | sh
 
-      # KROK 1: Tworzymy wrapper wskazujący na Twój obraz
       - name: 'Create Dockerfile wrapper'
         run: |
           echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > Dockerfile
 
-      # KROK 2: Wdrożenie (Bez sprawdzania whoami!)
-      # Używamy flagi --service oraz jawnie --environment production
+      # POPRAWKA 1: Usunięto --detach. Teraz czekamy na zakończenie deploymentu.
       - name: 'Deploy Image to Railway'
-        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production --detach --ci
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production --ci
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # KROK 3: Czekamy chwilę na przetworzenie
-      - name: 'Wait for deployment'
-        run: sleep 10
+      # POPRAWKA 2: Debugowanie (opcjonalne, ale warto sprawdzić gdzie są pliki)
+      - name: 'List files (Debug)'
+        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- ls -la /app
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # KROK 4: Komendy bazy danych
+      # POPRAWKA 3: Używamy pełnej ścieżki /app/bin/console
       - name: 'Create database if not exists'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php bin/console doctrine:database:create --if-not-exists
+        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /app/bin/console doctrine:database:create --if-not-exists
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: 'Run Migrations'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /app/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
