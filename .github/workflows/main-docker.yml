@@ -120,27 +120,33 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      # 1. Instalacja CLI za pomocą oficjalnego skryptu (zamiast NPM)
       - name: 'Install Railway CLI'
-        run: npm install -g @railway/cli
-
-      # KROK KLUCZOWY: Tworzymy "pusty" Dockerfile wskazujący na nasz gotowy obraz
-      - name: 'Create Dockerfile wrapper'
         run: |
-          echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > Dockerfile
-          cat Dockerfile # Dla podglądu w logach
+          curl -fsSL https://railway.app/install.sh | sh
+          echo "Railway CLI version:"
+          railway --version
 
-      # Wysyłamy ten Dockerfile do Railway. Railway "zbuduje" go w sekundę (bo tylko pobiera obraz)
-      - name: 'Deploy Image to Railway'
-        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --detach
+      # 2. Diagnostyka - sprawdzamy czy token działa i kogo loguje
+      - name: 'Check Railway Connection'
+        run: railway whoami
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # Opcjonalnie: Czekamy chwilę na wstanie kontenera (Railway up --detach nie czeka)
-      # Możesz usunąć ten krok, jeśli Twoje migracje są odporne na stan wyścigu
-      - name: 'Wait for deployment'
-        run: sleep 10
+      # 3. Tworzymy wrapper Dockerfile
+      - name: 'Create Dockerfile wrapper'
+        run: |
+          echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > Dockerfile
+          # Sprawdzamy zawartość dla pewności
+          cat Dockerfile 
 
-      # Uruchamiamy komendy na nowym wdrożeniu
+      # 4. Wdrożenie z flagą --ci (wyłącza interaktywne pytania)
+      - name: 'Deploy Image to Railway'
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --detach --ci
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # 5. Komendy bazy danych
       - name: 'Create database if not exists'
         run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} -- php bin/console doctrine:database:create --if-not-exists
         env:
