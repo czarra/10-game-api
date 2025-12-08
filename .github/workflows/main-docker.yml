@@ -120,19 +120,19 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      # Krok 1: Instalacja oficjalnego narzędzia CLI od Railway
+      # Krok 1: Instalacja CLI (potrzebne do komend bazy danych)
       - name: 'Install Railway CLI'
         run: npm install -g @railway/cli
 
-      # Krok 2: Wdrożenie obrazu (używamy bervProject, bo to standard dla GitHub Actions)
+      # Krok 2: Wdrożenie obrazu (POPRAWIONA WERSJA AKCJI)
       - name: 'Deploy to Railway'
-        uses: bervProject/railway-deploy@v2.0.0
+        uses: bervProject/railway-deploy@main
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           service: ${{ secrets.RAILWAY_SERVICE_ID }}
           image: ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}
 
-      # Krok 3: Komendy uruchamiamy bezpośrednio przez CLI (jest to stabilniejsze niż wrappery)
+      # Krok 3: Komendy (baza danych i migracje)
       - name: 'Create database if not exists'
         run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} -- php bin/console doctrine:database:create --if-not-exists
         env:
