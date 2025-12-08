@@ -99,7 +99,7 @@ jobs:
         with:
           images: ghcr.io/czarra/10-game-api
           tags: |
-            type=latest,value=latest
+            type=raw,value=latest
             type=sha,prefix=,format=short
 
       - name: 'Build and push Docker image'
