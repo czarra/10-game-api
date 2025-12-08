@@ -1,41 +1,52 @@
 # php/Dockerfile.prod
-# Dockerfile for the production environment.
-# This image is self-contained and includes the application code and production dependencies.
+# Zmieniamy bazę na Apache - dzięki temu mamy serwer WWW i PHP w jednym kontenerze
+FROM php:8.3-apache
 
-FROM php:8.3-fpm
-
-# 1. Install system dependencies required by PHP extensions
-# Added libpng-dev for the 'gd' extension.
-RUN apt update \
-    && apt install -y zlib1g-dev g++ git libicu-dev zip libzip-dev zip unzip libpq-dev libpng-dev \
+# 1. Instalacja zależności systemowych
+RUN apt-get update \
+    && apt-get install -y zlib1g-dev g++ git libicu-dev zip libzip-dev zip unzip libpq-dev libpng-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# 2. Install required PHP extensions for the project
+# 2. Instalacja rozszerzeń PHP
 RUN docker-php-ext-install intl opcache pdo pdo_pgsql gd zip \
     && pecl install apcu \
     && docker-php-ext-enable apcu
 
-# 3. Install Composer
+# 3. Instalacja Composera
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# 4. Set workdir
-WORKDIR /var/www/10_game
+# 4. Konfiguracja Apache dla Symfony (To zastępuje Twój kontener Nginx!)
+# Włączamy mod_rewrite
+RUN a2enmod rewrite
 
-# Define build-time argument and set it as an environment variable
+# Ustawiamy DocumentRoot na folder public/
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
+RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
+RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+
+# 5. Ustawiamy katalog roboczy (standardowy dla Apache)
+WORKDIR /var/www/html
+
+# Zmienne środowiskowe
 ARG APP_ENV=prod
 ENV APP_ENV=${APP_ENV}
 
-# 5. Install production Composer dependencies
-# This is done in a separate step to leverage Docker layer caching.
+# 6. Kopiujemy pliki projektu (najpierw Composer dla cache'owania)
 COPY composer.json composer.lock ./
 RUN composer install --prefer-dist --no-progress --no-suggest --no-dev --optimize-autoloader --no-scripts
 
-# 6. Copy the rest of the application source code into the image
+# Kopiujemy resztę kodu
 COPY . .
 
-# 7. Run composer post-install scripts now that all files are present
+# 7. Skrypty poinstalacyjne
 RUN composer run-script post-install-cmd
 
-# 8. Set correct permissions for the web server user for the 'var' directory
+# 8. Uprawnienia (Ważne: Apache działa jako użytkownik www-data)
 RUN chown -R www-data:www-data var
+
+# 9. Wystawiamy port 80 (HTTP)
+EXPOSE 80
+
+# Komenda startowa (Apache w tle)
+CMD ["apache2-foreground"]
