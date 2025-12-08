@@ -120,15 +120,8 @@ jobs:
       - name: 'Install Railway CLI'
         run: curl -fsSL https://railway.app/install.sh | sh
 
-      # Jeśli używasz wysyłania plików (metoda z isolated Dockerfile):
-      - name: 'Create Dockerfile wrapper'
-        run: |
-          mkdir deploy_payload
-          echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > deploy_payload/Dockerfile
-
       - name: 'Deploy Image to Railway'
-        working-directory: ./deploy_payload
-        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production --ci
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production --image ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }} --ci
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
