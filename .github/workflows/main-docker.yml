@@ -121,21 +121,21 @@ jobs:
     environment: production
     steps:
       - name: 'Deploy to Railway'
-        uses: railwayapp/cli-action@v2
+        uses: railwayapp/github-action@v2
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           railway_service: ${{ secrets.RAILWAY_SERVICE_ID }}
           image: ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}
 
       - name: 'Create database if not exists'
-        uses: railwayapp/cli-action@v2
+        uses: railwayapp/github-action@v2
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           railway_service: ${{ secrets.RAILWAY_SERVICE_ID }}
           args: run -- php bin/console doctrine:database:create --if-not-exists
 
       - name: 'Run Migrations'
-        uses: railwayapp/cli-action@v2
+        uses: railwayapp/github-action@v2
         with:
           railway_token: ${{ secrets.RAILWAY_TOKEN }}
           railway_service: ${{ secrets.RAILWAY_SERVICE_ID }}
