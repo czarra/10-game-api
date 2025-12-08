@@ -70,6 +70,56 @@ The easiest way to get the project running is to use the automated development s
 
 The application should now be running. You can access it at `http://localhost:8282`.
 
+## Manual Administrator Creation
+
+In a situation where you don't have access to an admin account (e.g., for initial setup or recovery), you can manually create one by inserting a record directly into the database.
+
+**This is a two-step process: first, you generate a secure password hash, and then you insert the user.**
+
+### Step 1: Generate a Secure Password Hash
+
+Run the following command in your terminal, replacing `YourStrongPassword` with a secure password of your choice.
+
+```bash
+docker compose exec php bin/console security:hash-password YourStrongPassword
+```
+
+The output will be a long string, which is the securely hashed password. It will look something like this:
+
+```
+Password hash for user App\Entity\User:
+$2y$13$n/fvy9jQW2n.vV.hDdrk6eYk3TjYC5tvea29kkj9G5/N5vGvF.7Gq
+```
+
+**Copy this entire hash string** for the next step.
+
+### Step 2: Insert the User into the Database
+
+1.  Open a connection to the PostgreSQL database inside the Docker container:
+
+    ```bash
+     docker compose exec database psql -U xgamesecret -d xgame
+    ```
+
+2.  Once you are in the `psql` shell, run the following SQL command. **Remember to replace the placeholder values**:
+    *   Replace the example `id` with a new UUID (you can use an online generator).
+    *   Replace `'admin@example.com'` with the desired email.
+    *   Replace the example `password` hash with the one you copied in Step 1.
+
+    ```sql
+    INSERT INTO "users" (id, email, roles, password, created_at, updated_at)
+    VALUES (
+        'f47ac10b-58cc-4372-a567-0e02b2c3d479',
+        'admin@example.com',
+        '["ROLE_ADMIN"]',
+        '$2y$13$n/fvy9jQW2n.vV.hDdrk6eYk3TjYC5tvea29kkj9G5/N5vGvF.7Gq', -- PASTE YOUR HASH HERE
+        NOW(),
+        NOW()
+    );
+    ```
+
+After executing the command, a new administrator account will be created, and you can use it to log in to the admin panel at `/admin`.
+
 ## Running Tests
 
 To run the full test suite (PHPUnit), use the following command. This will execute the tests inside the PHP container against the test database.
