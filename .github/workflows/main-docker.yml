@@ -120,19 +120,27 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
-      # Krok 1: Instalacja CLI (potrzebne do komend bazy danych)
       - name: 'Install Railway CLI'
         run: npm install -g @railway/cli
 
-      # Krok 2: Wdrożenie obrazu (POPRAWIONA WERSJA AKCJI)
-      - name: 'Deploy to Railway'
-        uses: bervProject/railway-deploy@main
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          service: ${{ secrets.RAILWAY_SERVICE_ID }}
-          image: ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}
+      # KROK KLUCZOWY: Tworzymy "pusty" Dockerfile wskazujący na nasz gotowy obraz
+      - name: 'Create Dockerfile wrapper'
+        run: |
+          echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > Dockerfile
+          cat Dockerfile # Dla podglądu w logach
 
-      # Krok 3: Komendy (baza danych i migracje)
+      # Wysyłamy ten Dockerfile do Railway. Railway "zbuduje" go w sekundę (bo tylko pobiera obraz)
+      - name: 'Deploy Image to Railway'
+        run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+      # Opcjonalnie: Czekamy chwilę na wstanie kontenera (Railway up --detach nie czeka)
+      # Możesz usunąć ten krok, jeśli Twoje migracje są odporne na stan wyścigu
+      - name: 'Wait for deployment'
+        run: sleep 10
+
+      # Uruchamiamy komendy na nowym wdrożeniu
       - name: 'Create database if not exists'
         run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} -- php bin/console doctrine:database:create --if-not-exists
         env:
