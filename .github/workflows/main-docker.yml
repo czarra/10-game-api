@@ -126,18 +126,20 @@ jobs:
         run: |
           echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > Dockerfile
 
-      # POPRAWKA 1: Usunięto --detach. Teraz czekamy na zakończenie deploymentu.
       - name: 'Deploy Image to Railway'
+        # Czekamy na zakończenie (brak --detach), to jest OK
         run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production --ci
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
+      # FIX: Używamy pełnej ścieżki /var/www/html/bin/console
       - name: 'Create database if not exists'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php  bin/console doctrine:database:create --if-not-exists
+        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:database:create --if-not-exists
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
+      # FIX: Tutaj też pełna ścieżka
       - name: 'Run Migrations'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php  bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
