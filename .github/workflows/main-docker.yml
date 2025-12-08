@@ -122,38 +122,37 @@ jobs:
       - name: 'Install Railway CLI'
         run: curl -fsSL https://railway.app/install.sh | sh
 
-      # KROK 1: Tworzymy CZYSTY katalog do deploymentu
-      # Dzięki temu Railway nie zobaczy Twojego kodu źródłowego i nie spróbuje go "nadpisać" swoim buildpackiem.
-      - name: 'Create isolated Dockerfile'
+      # Jeśli używasz wysyłania plików (metoda z isolated Dockerfile):
+      - name: 'Create Dockerfile wrapper'
         run: |
           mkdir deploy_payload
           echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > deploy_payload/Dockerfile
 
-      # KROK 2: Wdrożenie z CZYSTEGO katalogu
-      # Używamy working-directory, żeby railway up wysłał TYLKO to, co jest w deploy_payload
       - name: 'Deploy Image to Railway'
         working-directory: ./deploy_payload
         run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production --ci
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # KROK 3: Diagnostyka (Teraz powinno pokazać Twoje pliki!)
-      - name: '🐛 DEBUG: List files structure'
+      # KROK DETEKTYWISTYCZNY 🕵️‍♂️
+      - name: '🔍 FIND CONSOLE FILE'
         run: |
-          echo "--- Czekam na start kontenera ---"
-          sleep 10
-          echo "--- LISTING ROOT ---"
-          railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- ls -la /var/www/html
+          echo "--- GDZIE JESTEM? ---"
+          railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- pwd
+          
+          echo "--- SZUKAM PLIKU CONSOLE ---"
+          # Szukamy pliku 'console' w całym systemie plików
+          railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- find / -name console -type f 2>/dev/null
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # KROK 4: Komendy bazy danych (Ścieżka pełna dla pewności)
-      - name: 'Create database if not exists'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:database:create --if-not-exists
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: 'Run Migrations'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+#      # KROK 4: Komendy bazy danych (Ścieżka pełna dla pewności)
+#      - name: 'Create database if not exists'
+#        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:database:create --if-not-exists
+#        env:
+#          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+#
+#      - name: 'Run Migrations'
+#        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+#        env:
+#          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
