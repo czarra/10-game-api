@@ -164,7 +164,6 @@ The `auto-scripts` include:
 
 This project is currently in the development phase. The core features are being built as per the Product Requirements Document (PRD).
 
-
 ## License
 
 This project is released under a **Proprietary License**. 
