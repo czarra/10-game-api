@@ -132,6 +132,19 @@ jobs:
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
+      # KROK DIAGNOSTYCZNY: Pokaż co jest w folderze /var/www/html
+      - name: '🐛 DEBUG: List files structure'
+        run: |
+          echo "--- LISTING ROOT ---"
+          railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- ls -la /var/www/html
+          
+          echo "--- LISTING BIN ---"
+          # Sprawdźmy czy katalog bin w ogóle istnieje (|| true zapobiega błędowi skryptu jeśli nie istnieje)
+          railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- ls -la /var/www/html/bin || true
+
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
       # FIX: Używamy pełnej ścieżki /var/www/html/bin/console
       - name: 'Create database if not exists'
         run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:database:create --if-not-exists
