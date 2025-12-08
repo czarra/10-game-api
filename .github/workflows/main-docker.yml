@@ -122,36 +122,37 @@ jobs:
       - name: 'Install Railway CLI'
         run: curl -fsSL https://railway.app/install.sh | sh
 
-      - name: 'Create Dockerfile wrapper'
+      # KROK 1: Tworzymy CZYSTY katalog do deploymentu
+      # Dzięki temu Railway nie zobaczy Twojego kodu źródłowego i nie spróbuje go "nadpisać" swoim buildpackiem.
+      - name: 'Create isolated Dockerfile'
         run: |
-          echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > Dockerfile
+          mkdir deploy_payload
+          echo "FROM ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" > deploy_payload/Dockerfile
 
+      # KROK 2: Wdrożenie z CZYSTEGO katalogu
+      # Używamy working-directory, żeby railway up wysłał TYLKO to, co jest w deploy_payload
       - name: 'Deploy Image to Railway'
-        # Czekamy na zakończenie (brak --detach), to jest OK
+        working-directory: ./deploy_payload
         run: railway up --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production --ci
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # KROK DIAGNOSTYCZNY: Pokaż co jest w folderze /var/www/html
+      # KROK 3: Diagnostyka (Teraz powinno pokazać Twoje pliki!)
       - name: '🐛 DEBUG: List files structure'
         run: |
+          echo "--- Czekam na start kontenera ---"
+          sleep 10
           echo "--- LISTING ROOT ---"
           railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- ls -la /var/www/html
-          
-          echo "--- LISTING BIN ---"
-          # Sprawdźmy czy katalog bin w ogóle istnieje (|| true zapobiega błędowi skryptu jeśli nie istnieje)
-          railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- ls -la /var/www/html/bin || true
-
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # FIX: Używamy pełnej ścieżki /var/www/html/bin/console
+      # KROK 4: Komendy bazy danych (Ścieżka pełna dla pewności)
       - name: 'Create database if not exists'
         run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:database:create --if-not-exists
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
-      # FIX: Tutaj też pełna ścieżka
       - name: 'Run Migrations'
         run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
         env:
