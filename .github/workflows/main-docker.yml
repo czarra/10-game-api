@@ -145,11 +145,11 @@ jobs:
 
       # KROK 4: Komendy bazy danych (Ścieżka pełna dla pewności)
       - name: 'Create database if not exists'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /home/runner/work/10-game-api/10-game-api/bin/console doctrine:database:create --if-not-exists
+        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /app/bin/console doctrine:database:create --if-not-exists
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
       - name: 'Run Migrations'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /home/runner/work/10-game-api/10-game-api/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /app/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
