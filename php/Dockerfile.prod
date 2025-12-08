@@ -1,8 +1,6 @@
-# php/Dockerfile.prod
-# Zmieniamy bazę na Apache - dzięki temu mamy serwer WWW i PHP w jednym kontenerze
 FROM php:8.3-apache
 
-# 1. Instalacja zależności systemowych
+# 1. Instalacja zależności
 RUN apt-get update \
     && apt-get install -y zlib1g-dev g++ git libicu-dev zip libzip-dev zip unzip libpq-dev libpng-dev \
     && apt-get clean \
@@ -16,37 +14,41 @@ RUN docker-php-ext-install intl opcache pdo pdo_pgsql gd zip \
 # 3. Instalacja Composera
 RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
 
-# 4. Konfiguracja Apache dla Symfony (To zastępuje Twój kontener Nginx!)
-# Włączamy mod_rewrite
+# 4. Konfiguracja Apache (ROUTING FIX)
 RUN a2enmod rewrite
 
-# Ustawiamy DocumentRoot na folder public/
-ENV APACHE_DOCUMENT_ROOT /var/www/html/public
-RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
-RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
+# Nadpisujemy konfigurację strony domyślnej
+# FallbackResource /index.php sprawia, że Apache działa jak Nginx+PHP-FPM
+# i przekazuje wszystko do Symfony.
+RUN echo '<VirtualHost *:80>\n\
+    ServerName localhost\n\
+    DocumentRoot /var/www/html/public\n\
+    <Directory /var/www/html/public>\n\
+        AllowOverride All\n\
+        Require all granted\n\
+        FallbackResource /index.php\n\
+    </Directory>\n\
+</VirtualHost>' > /etc/apache2/sites-available/000-default.conf
 
-# 5. Ustawiamy katalog roboczy (standardowy dla Apache)
+# 5. Katalog roboczy
 WORKDIR /var/www/html
 
-# Zmienne środowiskowe
 ARG APP_ENV=prod
 ENV APP_ENV=${APP_ENV}
 
-# 6. Kopiujemy pliki projektu (najpierw Composer dla cache'owania)
+# 6. Zależności Composera
 COPY composer.json composer.lock ./
 RUN composer install --prefer-dist --no-progress --no-suggest --no-dev --optimize-autoloader --no-scripts
 
-# Kopiujemy resztę kodu
+# 7. Kod aplikacji
 COPY . .
 
-# 7. Skrypty poinstalacyjne
+# 8. Skrypty
 RUN composer run-script post-install-cmd
 
-# 8. Uprawnienia (Ważne: Apache działa jako użytkownik www-data)
+# 9. Uprawnienia
 RUN chown -R www-data:www-data var
 
-# 9. Wystawiamy port 80 (HTTP)
 EXPOSE 80
 
-# Komenda startowa (Apache w tle)
 CMD ["apache2-foreground"]
