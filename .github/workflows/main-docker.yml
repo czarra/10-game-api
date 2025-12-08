@@ -99,6 +99,7 @@ jobs:
         with:
           images: ghcr.io/czarra/10-game-api
           tags: |
+            type=latest,value=latest
             type=sha,prefix=,format=short
 
       - name: 'Build and push Docker image'
@@ -112,30 +113,30 @@ jobs:
           build-args: |
             APP_ENV=prod
 
-  deploy-to-railway:
-    name: 'Deploy to Railway'
-    needs: [ build-and-push ]
-    runs-on: ubuntu-latest
-    steps:
-      - name: 'Install Railway CLI'
-        run: curl -fsSL https://railway.app/install.sh | sh
-
-      - name: 'Link to Railway Service'
-        run: railway link ${{ secrets.RAILWAY_SERVICE_ID }}
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: 'Deploy Image to Railway'
-        run: railway deploy --image ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }} --environment production --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: 'Create database if not exists'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:database:create --if-not-exists
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: 'Run Migrations'
-        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+#  deploy-to-railway:
+#    name: 'Deploy to Railway'
+#    needs: [ build-and-push ]
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: 'Install Railway CLI'
+#        run: curl -fsSL https://railway.app/install.sh | sh
+#
+#      - name: 'Link to Railway Service'
+#        run: railway link ${{ secrets.RAILWAY_SERVICE_ID }}
+#        env:
+#          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+#
+#      - name: 'Deploy Image to Railway'
+#        run: railway deploy --image ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }} --environment production --detach
+#        env:
+#          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+#
+#      - name: 'Create database if not exists'
+#        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:database:create --if-not-exists
+#        env:
+#          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+#
+#      - name: 'Run Migrations'
+#        run: railway run --service ${{ secrets.RAILWAY_SERVICE_ID }} --environment production -- php /var/www/html/bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+#        env:
+#          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
