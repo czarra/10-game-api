@@ -112,3 +112,22 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             APP_ENV=prod
+
+  # NOWY JOB: Deploy do Railway
+  deploy:
+    name: 'Deploy to Railway'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: 'Install Railway CLI'
+        uses: railwayapp/cli-action@v1
+        with:
+          railway_token: ${{ secrets.RAILWAY_TOKEN }}
+
+      - name: 'Deploy to Railway'
+        run: |
+          railway service:update \
+            --service "game-api-prod-2" \
+            --image "ghcr.io/czarra/10-game-api:${{ needs.build-and-push.outputs.image_tag }}" \
+            --detach
