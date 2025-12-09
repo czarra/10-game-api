@@ -123,7 +123,7 @@ jobs:
       RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
     steps:
       - name: 'Install Railway CLI'
-        uses: railwayapp/setup-railway@v1
+        run: curl -fsSL https://railway.app/install.sh | sh
 
       - name: 'Deploy to Railway'
         run: |
