@@ -112,3 +112,17 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           build-args: |
             APP_ENV=prod
+
+  deploy:
+    name: 'Trigger Railway Deploy'
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Install Railway CLI
+        run: npm i -g @railway/cli
+
+      - name: Deploy
+        run: railway redeploy --service "game-api-prod-2"
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
