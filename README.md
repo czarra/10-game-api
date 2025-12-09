@@ -10,6 +10,7 @@ A backend application for creating and managing geolocation-based urban games. I
 - [Tech Stack](#tech-stack)
 - [Getting Started Locally](#getting-started-locally)
 - [Available Scripts](#available-scripts)
+- [API Endpoints](#api-endpoints)
 - [Project Scope](#project-scope)
 - [Project Status](#project-status)
 - [License](#license)
@@ -34,7 +35,7 @@ The system is composed of two main parts:
 - **Bundle:** Sonata Admin
 
 ### Infrastructure
-- **Containerization:** Docker
+- **Containerization:** Docker - Railway.app for hosting via Docker image
 - **CI/CD:** GitHub Actions
 
 ### Testing
@@ -139,6 +140,184 @@ The `auto-scripts` include:
 -   `cache:clear`: Clears the application cache.
 -   `assets:install`: Installs web assets.
 
+## API Endpoints
+
+The API documentation is interactively browseable using Swagger UI, available at `/api/doc`. This documentation provides detailed information about each endpoint, including request/response schemas, parameters, and example values.
+
+Below is a list of available REST API endpoints. All endpoints (with the exception of registration and login) require authentication using a JWT token passed in the `Authorization: Bearer <token>` header.
+
+### Authentication
+
+---
+
+#### User Registration
+
+-   **Endpoint**: `POST /api/auth/register`
+-   **Description**: Creates a new user account.
+-   **Security**: None
+-   **Request Body**:
+    ```json
+    {
+      "email": "user@example.com",
+      "password": "yourStrongPassword123"
+    }
+    ```
+-   **Response (201 CREATED)**:
+    ```json
+    {
+      "token": "ey...",
+      "refresh_token": "abc..."
+    }
+    ```
+-   **Response (409 CONFLICT)**: Returned when a user with the provided email address already exists.
+
+---
+
+#### User Login
+
+-   **Endpoint**: `POST /api/auth/login`
+-   **Description**: Authenticates a user and returns JWT tokens.
+-   **Security**: None
+-   **Request Body**:
+    ```json
+    {
+      "email": "user@example.com",
+      "password": "yourStrongPassword123"
+    }
+    ```
+-   **Response (200 OK)**:
+    ```json
+    {
+      "token": "ey...",
+      "refresh_token": "abc..."
+    }
+    ```
+-   **Response (401 UNAUTHORIZED)**: Returned in case of invalid login credentials.
+
+---
+
+#### Refresh Token
+
+-   **Endpoint**: `POST /api/token/refresh`
+-   **Description**: Generates a new JWT token based on a valid refresh token.
+-   **Security**: None
+-   **Request Body**:
+    ```json
+    {
+      "refresh_token": "abc..."
+    }
+    ```
+-   **Response (200 OK)**:
+    ```json
+    {
+      "token": "ey...",
+      "refresh_token": "def..."
+    }
+    ```
+
+---
+
+#### Logout
+
+-   **Endpoint**: `POST /api/auth/logout`
+-   **Description**: Invalidates all active refresh tokens for the logged-in user.
+-   **Security**: JWT token required
+-   **Response (204 NO CONTENT)**
+
+---
+
+### Games
+
+---
+
+#### List of Available Games
+
+-   **Endpoint**: `GET /api/games`
+-   **Description**: Returns a paginated list of games that are active and available to start.
+-   **Security**: JWT token required
+-   **Query Parameters**:
+    -   `page` (int, optional, default: 1): Page number.
+    -   `limit` (int, optional, default: 10): Number of results per page (max. 50).
+-   **Response (200 OK)**: Paginated list of `GameListItemDto` objects.
+
+---
+
+#### List of User's Active Games
+
+-   **Endpoint**: `GET /api/games/active`
+-   **Description**: Returns a list of games that the logged-in user has started but not yet completed.
+-   **Security**: JWT token required
+-   **Response (200 OK)**: List of `ActiveGameListItemDto` objects.
+
+---
+
+#### Active Game Details
+
+-   **Endpoint**: `GET /api/games/{userGameId}/active`
+-   **Description**: Returns detailed information about a specific user's active game, including the current task.
+-   **Security**: JWT token required
+-   **URL Parameters**:
+    -   `userGameId` (UUID): User's game session identifier.
+-   **Response (200 OK)**: `ActiveGameDetailsDto` object.
+
+---
+
+#### List of Completed Games
+
+-   **Endpoint**: `GET /api/games/completed`
+-   **Description**: Returns a paginated list of games completed by the logged-in user.
+-   **Security**: JWT token required
+-   **Query Parameters**:
+    -   `page` (int, optional, default: 1)
+    -   `limit` (int, optional, default: 10, max. 50)
+-   **Response (200 OK)**: Paginated list of `CompletedGameListItemDto` objects.
+
+---
+
+#### Game Details
+
+-   **Endpoint**: `GET /api/games/{id}`
+-   **Description**: Returns public, detailed information about a game.
+-   **Security**: JWT token required
+-   **URL Parameters**:
+    -   `id` (UUID): Game identifier.
+-   **Response (200 OK)**: `GameDetailsDto` object.
+
+---
+
+#### Start Game
+
+-   **Endpoint**: `POST /api/games/{gameId}/start`
+-   **Description**: Starts a new game for the logged-in user.
+-   **Security**: JWT token required
+-   **URL Parameters**:
+    -   `gameId` (UUID): Identifier of the game to start.
+-   **Response (201 CREATED)**: `StartGameResponseDto` object containing the game session ID (`userGameId`) and details of the first task.
+
+---
+
+#### Complete Task
+
+-   **Endpoint**: `POST /api/games/{userGameId}/tasks/{taskId}/complete`
+-   **Description**: Marks a task as complete after verifying the user's location.
+-   **Security**: JWT token required
+-   **URL Parameters**:
+    -   `userGameId` (UUID): Game session identifier.
+    -   `taskId` (UUID): Identifier of the completed task.
+-   **Request Body**:
+    ```json
+    {
+      "latitude": 52.2297,
+      "longitude": 21.0122
+    }
+    ```
+-   **Response (200 OK)**:
+    -   If the game is not completed, returns a `TaskCompletionResponseDto` object with details of the next task.
+    -   If it was the last task, returns a `GameCompletionResponseDto` object with a game summary.
+-   **Response (409 CONFLICT)**: Returned when, for example, the location is invalid or the task is not the user's current task.
+
+---
+
 ## Project Scope
 
 ### Key Features
@@ -163,7 +342,6 @@ The `auto-scripts` include:
 **In Development**
 
 This project is currently in the development phase. The core features are being built as per the Product Requirements Document (PRD).
-
 
 ## License
 

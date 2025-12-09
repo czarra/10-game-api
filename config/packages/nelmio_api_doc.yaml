@@ -2,7 +2,7 @@ nelmio_api_doc:
     documentation:
         info:
             title: 'Moje API'
-            description: 'Interaktywna dokumentacja dla mojego projektu.'
+            description: 'A backend application for creating and managing geolocation-based urban games.'
             version: '1.0.0'
         components:
             securitySchemes:
