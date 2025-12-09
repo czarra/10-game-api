@@ -1,5 +1,5 @@
 # .github/workflows/master-docker.yml
-name: 'Build, Push and Deploy to Production'
+name: 'Build, Push and Deploy Image'
 
 on:
   workflow_dispatch:
