@@ -1,7 +1,7 @@
 nelmio_api_doc:
     documentation:
         info:
-            title: 'Moje API'
+            title: 'Geolocation game API'
             description: 'A backend application for creating and managing geolocation-based urban games.'
             version: '1.0.0'
         components:
