@@ -72,7 +72,7 @@ class UserGameRepository extends ServiceEntityRepository
 
         $nextTasksQb = $this->getEntityManager()->createQueryBuilder();
         $nextTasksQb
-            ->select('ug.id as userGameId, gt.id, t.name, t.description, gt.sequenceOrder')
+            ->select('ug.id as userGameId, t.id, t.name, t.description, gt.sequenceOrder')
             ->from(UserGame::class, 'ug')
             ->innerJoin('ug.game', 'g')
             ->innerJoin('g.gameTasks', 'gt')
