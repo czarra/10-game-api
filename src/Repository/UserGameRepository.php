@@ -152,7 +152,7 @@ class UserGameRepository extends ServiceEntityRepository
         // Subquery to find the next task
         $nextTaskQb = $this->getEntityManager()->createQueryBuilder();
         $nextTask = $nextTaskQb
-            ->select('gt.id', 't.name', 't.description', 'gt.sequenceOrder')
+            ->select('t.id', 't.name', 't.description', 'gt.sequenceOrder')
             ->from(GameTask::class, 'gt')
             ->innerJoin('gt.task', 't')
             ->leftJoin(

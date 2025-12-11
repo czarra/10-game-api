@@ -27,7 +27,6 @@ use OpenApi\Attributes as OA; // Importuj alias dla atrybutów
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use App\Dto\TaskCompletionRequestDto;
-use App\Entity\GameTask;
 use App\Entity\Task;
 use App\Entity\UserGame;
 use Webmozart\Assert\Assert;
@@ -213,15 +212,11 @@ final class GameController extends AbstractController
     public function completeTask(
         Request $request,
         #[MapEntity(id: 'userGameId')] UserGame $userGame,
-        #[MapEntity(id: 'taskId')] GameTask $gameTask,
-        #[CurrentUser] User $user
+        #[MapEntity(id: 'taskId')] Task $task,
+        #[CurrentUser] User $user // Current user for service layer
     ): JsonResponse {
-        if ($userGame->getUser() !== $user) {
-            throw $this->createAccessDeniedException('You cannot complete tasks for another user.');
-        }
-
-        if ($gameTask->getGame() !== $userGame->getGame()) {
-            throw $this->createAccessDeniedException('This task does not belong to the specified game.');
+        if ($userGame->getUser()->getId() !== $user->getId()) {
+            throw $this->createAccessDeniedException('You are not allowed to complete tasks for this game session.');
         }
 
         try {
@@ -236,9 +231,6 @@ final class GameController extends AbstractController
                 }
                 return new JsonResponse(['errors' => $errorMessages], 400);
             }
-
-            $task = $gameTask->getTask();
-            Assert::notNull($task);
 
             $responseDto = $this->gamePlayService->completeTask(
                 $user,
