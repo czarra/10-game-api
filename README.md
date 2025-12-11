@@ -125,9 +125,18 @@ After executing the command, a new administrator account will be created, and yo
 
 To run the full test suite (PHPUnit), use the following command. This will execute the tests inside the PHP container against the test database.
 
-```bash
-docker compose exec php bin/phpunit
-```
+1. **Run all test**:
+    ```bash
+    docker compose exec php bin/phpunit
+    ```
+2. **Run unit test**:
+    ```bash
+    docker compose exec php bin/phpunit --testsuite Unit
+    ```
+3. **Run E2E test**:
+    ```bash
+    docker compose exec php bin/phpunit --testsuite E2E
+    ```
 
 ## Available Scripts
 

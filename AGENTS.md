@@ -41,6 +41,14 @@
     ```bash
     docker compose exec php bin/console doctrine:migrations:migrate
     ```
+4. **Run unit test**:
+    ```bash
+    docker compose exec php bin/phpunit --testsuite Unit
+    ```
+5. **Run E2E test**:
+    ```bash
+    docker compose exec php bin/phpunit --testsuite E2E
+    ```
 
 ## Code Style
 
