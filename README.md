@@ -35,7 +35,8 @@ The system is composed of two main parts:
 - **Bundle:** Sonata Admin
 
 ### Infrastructure
-- **Containerization:** Docker - Railway.app for hosting via Docker image
+- **Containerization:** Docker
+- **Hosting:** Railway.app (via Docker image)
 - **CI/CD:** GitHub Actions
 
 ### Testing
@@ -385,9 +386,9 @@ Below is a list of available REST API endpoints. All endpoints (with the excepti
 
 ## Project Status
 
-**In Development**
+**MVP in Production**
 
-This project is currently in the development phase. The core features are being built as per the Product Requirements Document (PRD).
+The project is currently in the MVP (Minimum Viable Product) phase and has been deployed to a production environment. It is actively maintained and open for further feature development.
 
 ## License
 
