@@ -27,6 +27,7 @@ use OpenApi\Attributes as OA; // Importuj alias dla atrybutów
 use Symfony\Component\Serializer\SerializerInterface;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 use App\Dto\TaskCompletionRequestDto;
+use App\Entity\GameTask;
 use App\Entity\Task;
 use App\Entity\UserGame;
 use Webmozart\Assert\Assert;
@@ -209,15 +210,18 @@ final class GameController extends AbstractController
 
     #[Route('/{userGameId}/tasks/{taskId}/complete', name: 'api_user_game_task_complete', methods: ['POST'])]
     #[IsGranted('ROLE_USER')]
-    // Ensure UserGame and Task are automatically resolved from path parameters and security context
     public function completeTask(
         Request $request,
         #[MapEntity(id: 'userGameId')] UserGame $userGame,
-        #[MapEntity(id: 'taskId')] Task $task,
-        #[CurrentUser] User $user // Current user for service layer
+        #[MapEntity(id: 'taskId')] GameTask $gameTask,
+        #[CurrentUser] User $user
     ): JsonResponse {
-        if ($userGame->getUser()->getId() !== $user->getId()) {
-            throw $this->createAccessDeniedException('You are not allowed to complete tasks for this game session.');
+        if ($userGame->getUser() !== $user) {
+            throw $this->createAccessDeniedException('You cannot complete tasks for another user.');
+        }
+
+        if ($gameTask->getGame() !== $userGame->getGame()) {
+            throw $this->createAccessDeniedException('This task does not belong to the specified game.');
         }
 
         try {
@@ -233,6 +237,9 @@ final class GameController extends AbstractController
                 return new JsonResponse(['errors' => $errorMessages], 400);
             }
 
+            $task = $gameTask->getTask();
+            Assert::notNull($task);
+
             $responseDto = $this->gamePlayService->completeTask(
                 $user,
                 $userGame,
@@ -242,8 +249,6 @@ final class GameController extends AbstractController
 
             return $this->json($responseDto);
         } catch (\Exception $e) {
-            // This will be caught by the ExceptionListener, but for now, we'll return a generic error.
-            // The ExceptionListener will map custom exceptions to 409, etc.
             return new JsonResponse(['error' => $e->getMessage()], 500);
         }
     }
