@@ -191,7 +191,7 @@ final class GameController extends AbstractController
         }
 
         $currentTaskDto = new CurrentTaskDto(
-            $firstTask->getId()->toRfc4122(),
+            $firstTask->getTask()->getId()->toRfc4122(),
             $firstTask->getTask()->getName(),
             $firstTask->getTask()->getDescription(),
             $firstTask->getSequenceOrder()
