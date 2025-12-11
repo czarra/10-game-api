@@ -71,6 +71,43 @@ The easiest way to get the project running is to use the automated development s
 
 The application should now be running. You can access it at `http://localhost:8282`.
 
+### Generating JWT Keys
+
+The application uses JWT for API authentication, which requires a private and public key pair for signing tokens. You need to generate these keys manually.
+
+1.  **Create the JWT directory**:
+    First, ensure the directory for the keys exists.
+
+    ```bash
+    mkdir -p config/jwt
+    ```
+
+2.  **Generate the private key**:
+    Run the following command to generate the private key. You will be prompted to create a passphrase. Choose a strong one and remember it.
+
+    ```bash
+    openssl genrsa -aes128 -passout pass:YourStrongPassphrase -out config/jwt/private.pem 4096
+    ```
+    *Replace `YourStrongPassphrase` with your actual passphrase.*
+
+3.  **Generate the public key**:
+    Next, generate the public key from your new private key. You'll use the same passphrase.
+
+    ```bash
+    openssl rsa -passin pass:YourStrongPassphrase -pubout -in config/jwt/private.pem -out config/jwt/public.pem
+    ```
+
+4.  **Set the passphrase in your environment file**:
+    Finally, open your `.env.dev` file (and any other `.env` files like `.env.test`) and set the `JWT_PASSPHRASE` variable to the passphrase you chose.
+
+    ```dotenv
+    # .env.dev
+    # ...
+    JWT_PASSPHRASE="YourStrongPassphrase"
+    ```
+
+> **Important**: The `config/jwt/private.pem` file is highly sensitive and should **never** be committed to version control. Make sure your `.gitignore` file includes an entry for `config/jwt/private.pem` or the entire `config/jwt/` directory.
+
 ## Manual Administrator Creation
 
 In a situation where you don't have access to an admin account (e.g., for initial setup or recovery), you can manually create one by inserting a record directly into the database.
